@@ -1,10 +1,13 @@
 import csv
+import hashlib
+import os
 from pathlib import Path
-
-from Scrapper.Subreddits.AbstractSubreddit import Entry
+import cv2
 from Scrapper.Subreddits.Brogress import Brogress
 from Scrapper.Subreddits.ProgressPics import ProgressPics
-from Scrapper.Subreddits.util import save_image
+import pandas as pd
+
+from Scrapper.Subreddits.util import Entry, save_image
 
 p = Path.cwd() / 'dump'
 pimg = (p / 'img')
@@ -14,20 +17,79 @@ pimg.mkdir(parents=True, exist_ok=True)
 subreddits = [Brogress(), ProgressPics()]
 table = []
 stats = {}
+
+
+def write_table():
+    with open(p / 'data.csv', 'a', newline='') as f:
+        csv_out = csv.writer(f, delimiter=',')
+        csv_out.writerows(table)
+
+
+def delete(to_delete):
+    csv_path = p / "data.csv"
+    df = pd.read_csv(csv_path)
+    for d in to_delete:
+        os.remove(pimg / d)
+        df = df[df.id != d.split(".jpg")[0]]
+    df.to_csv(csv_path)
+
+
+with open(p / 'data.csv', 'w', newline='') as f:
+    csv_out = csv.writer(f, delimiter=',')
+    csv_out.writerow(Entry._fields)
+
 for idx, subreddit in enumerate(subreddits):
+    stats[subreddit.name] = {'correct': 0, 'error': 0}
     for idx2, (entry, post) in enumerate(subreddit.process()):
-        if idx2 % 500 == 0:
-            print(idx2)
+
         if entry and save_image(post):
             table.append(entry)
+            stats[subreddit.name]['correct'] = stats[subreddit.name]['correct'] + 1
         else:
-            s = stats.get(idx, {'error': 0})
-            s['error'] += 1
+            stats[subreddit.name]['error'] = stats[subreddit.name]['error'] + 1
+        if idx2 % 500 == 0 and idx2 != 0:
+            print(idx2)
+            write_table()
+            table = []
 
-for idx, s in enumerate(subreddits):
-    print("%s: ".format(s.name) + stats[idx])
+write_table()
+print(stats)
 
-with open(p / 'data.csv', 'w') as out:
-    csv_out = csv.writer(out)
-    csv_out.writerow(list(Entry._fields))
-    csv_out.writerows(table)
+duplicates = []
+hash_keys = {}
+
+print("Checking for duplicates")
+for index, filename in enumerate(os.listdir(pimg)):
+    if os.path.isfile(pimg / filename):
+        with open(pimg / filename, 'rb') as f:
+            if index % 1000 == 0:
+                print(index)
+            filehash = hashlib.md5(f.read()).hexdigest()
+
+            if filehash not in hash_keys:
+                hash_keys[filehash] = filename
+            else:
+                duplicates.append(filename)
+
+delete(duplicates)
+# checking faces is done separate as it's way more expensive than calculating a hash
+no_faces = []
+faceCascade = cv2.CascadeClassifier("haarcascade_frontalface_default.xml")
+
+for index, filename in enumerate(os.listdir(pimg)):
+    fpath = pimg / filename
+    if os.path.isfile(fpath):
+        image = cv2.imread(fpath.as_posix(), 0)
+        faces = faceCascade.detectMultiScale(
+            image,
+            scaleFactor=1.1,
+            minNeighbors=5,
+            minSize=(30, 30)
+        )
+        if len(faces) == 0:
+            no_faces.append(filename)
+
+delete(no_faces)
+
+print(f'Found {len(duplicates)} duplicates')
+print(f'Found {len(no_faces)} with no faces')
