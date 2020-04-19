@@ -18,7 +18,6 @@ subreddits = [Brogress(), ProgressPics()]
 table = []
 stats = {}
 
-
 def write_table():
     with open(p / 'data.csv', 'a', newline='') as f:
         csv_out = csv.writer(f, delimiter=',')
@@ -30,54 +29,53 @@ def delete(to_delete):
     df = pd.read_csv(csv_path)
     for d in to_delete:
         os.remove(pimg / d)
-        df = df[df.id != d.split(".jpg")[0]]
-    df.to_csv(csv_path)
+        df = df[df.path != d.split(".jpg")[0]]
+    df.to_csv(csv_path, index=False)
 
 
-#
-# with open(p / 'data.csv', 'w', newline='') as f:
-#     csv_out = csv.writer(f, delimiter=',')
-#     csv_out.writerow(Entry._fields)
-#
-# for idx, subreddit in enumerate(subreddits):
-#     stats[subreddit.name] = {'correct': 0, 'error': 0}
-#     for idx2, (entry, post) in enumerate(subreddit.process()):
-#
-#         if entry and save_image(post):
-#             table.append(entry)
-#             stats[subreddit.name]['correct'] = stats[subreddit.name]['correct'] + 1
-#         else:
-#             stats[subreddit.name]['error'] = stats[subreddit.name]['error'] + 1
-#         if idx2 % 500 == 0 and idx2 != 0:
-#             print(idx2)
-#             write_table()
-#             table = []
-#
-# write_table()
+with open(p / 'data.csv', 'w', newline='') as f:
+    csv_out = csv.writer(f, delimiter=',')
+    csv_out.writerow(Entry._fields)
+
+for idx, subreddit in enumerate(subreddits):
+    stats[subreddit.name] = {'correct': 0, 'error': 0}
+    for idx2, (entry, post) in enumerate(subreddit.process()):
+
+        if entry and save_image(post):
+            table.append(entry)
+            stats[subreddit.name]['correct'] = stats[subreddit.name]['correct'] + 1
+        else:
+            stats[subreddit.name]['error'] = stats[subreddit.name]['error'] + 1
+        if idx2 % 500 == 0 and idx2 != 0:
+            print(idx2)
+            write_table()
+            table = []
+
+write_table()
 
 duplicates = []
 hash_keys = {}
 
-# print("Checking for duplicates")
-# for index, filename in enumerate(os.listdir(pimg)):
-#     if os.path.isfile(pimg / filename):
-#         try:
-#             with open(pimg / filename, 'rb') as f:
-#                 if index % 1000 == 0:
-#                     print(index)
-#                 filehash = hashlib.md5(f.read()).hexdigest()
-#
-#                 if filehash not in hash_keys:
-#                     hash_keys[filehash] = filename
-#                 else:
-#                     duplicates.append(filename)
-#         except Exception as e:
-#             print(e)
-#             duplicates.append(filename)
-#
-# print("deleting duplicates")
-# delete(duplicates)
-# print(f"Deleted {len(duplicates)} duplicates")
+print("Checking for duplicates")
+for index, filename in enumerate(os.listdir(pimg)):
+    if os.path.isfile(pimg / filename):
+        try:
+            with open(pimg / filename, 'rb') as f:
+                if index % 1000 == 0:
+                    print(index)
+                filehash = hashlib.md5(f.read()).hexdigest()
+
+                if filehash not in hash_keys:
+                    hash_keys[filehash] = filename
+                else:
+                    duplicates.append(filename)
+        except Exception as e:
+            print(e)
+            duplicates.append(filename)
+
+print("deleting duplicates")
+delete(duplicates)
+print(f"Deleted {len(duplicates)} duplicates")
 # checking faces is done separate as it's way more expensive than calculating a hash
 no_faces = []
 faceCascade = cv2.CascadeClassifier("haarcascade_frontalface_default.xml")
@@ -102,6 +100,10 @@ for index, filename in enumerate(os.listdir(pimg)):
             print(e)
             no_faces.append(filename)
 delete(no_faces)
+
+csv_path = p / "data.csv"
+df = pd.read_csv(csv_path)
+df['path'] = str(pimg) + df['id'].astype(str) + ".jpg"
 
 print(stats)
 print(f'Found {len(duplicates)} duplicates')

@@ -2,7 +2,7 @@ import urllib
 from collections import namedtuple
 from pathlib import Path
 
-Entry = namedtuple("Entry", "sex age height start_weight end_weight id sanitized")
+Entry = namedtuple("Entry", "sex age height start_weight end_weight id sanitized path")
 
 
 def save_image(post):
