@@ -1,0 +1,27 @@
+{
+  "name": "frontend",
+  "version": "1.0.0",
+  "description": "",
+  "author": "",
+  "license": "ISC",
+  "main": "src/index.js",
+  "dependencies": {
+    "@material-ui/core": "3.9.3",
+    "@material-ui/icons": "4.9.1",
+    "@material-ui/lab": "3.0.0-alpha.30",
+    "csv": "^5.3.2",
+    "get-orientation": "1.1.2",
+    "react": "16.8.6",
+    "react-csv-reader": "^3.0.5",
+    "react-dom": "16.8.6",
+    "react-easy-crop": "latest",
+    "react-scripts": "1.1.4"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test --env=jsdom",
+    "eject": "react-scripts eject"
+  }
+}
