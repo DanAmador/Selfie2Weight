@@ -1,12 +1,11 @@
 import React, {Fragment} from 'react'
 import ReactDOM from 'react-dom'
-import Slider from '@material-ui/lab/Slider'
-import Cropper from 'react-easy-crop'
-import getCroppedImg from './cropImage'
 import './styles.css'
-import {Button} from '@material-ui/core'
-import ImgDialog from './ImgDialog'
 import CSVReader from 'react-csv-reader'
+import Cropper from 'react-cropper';
+import 'cropperjs/dist/cropper.css'; // see installation section above for versions of NPM older than 3.0.0
+
+const cropper = React.createRef(null);
 
 class App extends React.Component {
     state = {
@@ -18,84 +17,62 @@ class App extends React.Component {
         croppedAreaPixels: null,
         croppedImage: null,
         isCropping: false,
+        cropResult: null,
     }
 
-    onCropChange = crop => {
-        this.setState({crop})
+    constructor(props) {
+        super(props);
+        this.cropImage = this.cropImage.bind(this);
+        this.onChange = this.onChange.bind(this);
     }
 
-    onCropComplete = (croppedArea, croppedAreaPixels) => {
-        console.log(croppedArea, croppedAreaPixels)
-        this.setState({
-            croppedAreaPixels,
-        })
-    }
-
-    onZoomChange = zoom => {
-        this.setState({zoom})
-    }
-
-    showResult = async () => {
-        try {
-            this.setState({
-                isCropping: true,
-            })
-            const croppedImage = await getCroppedImg(
-                this.state.imageSrc,
-                this.state.croppedAreaPixels
-            )
-            console.log('done', {croppedImage})
-            this.setState({
-                croppedImage,
-                isCropping: false,
-            })
-        } catch (e) {
-            console.error(e)
-            this.setState({
-                isCropping: false,
-            })
+    onChange(e) {
+        e.preventDefault();
+        let files;
+        if (e.dataTransfer) {
+            files = e.dataTransfer.files;
+        } else if (e.target) {
+            files = e.target.files;
         }
+        const reader = new FileReader();
+        reader.onload = () => {
+            this.setState({src: reader.result});
+        };
+        reader.readAsDataURL(files[0]);
     }
 
-    onClose = async () => {
-        this.setState({
-            croppedImage: null,
-        })
-    }
-
-    onCsvLoaded = (data, fileInfo) => {
+    onCsvLoaded = async (data, fileInfo) => {
         console.log(fileInfo)
         console.log(data)
-    }
-    onFileChange = async e => {
-        console.log(e.target.files)
-        if (e.target.files && e.target.files.length > 0) {
-            // const file = e.target.files[0]
-            // if (file.name.endsWith(".csv")){
-            //   var c = csv.parse(file)
-            //   console.log(c)
-            //   this.setState({
-            //     csvSrc : c
-            //   })
-            // }
+        for (let entry in data) {
+            let e = data[entry]
+            if (e.sanitized === "False") {
+                console.log(e.id)
+                let imageDataUrl = "http://127.0.0.1:5000/img/" + e.id
 
-            // let imageDataUrl = await readFile(file)
-
-            // apply rotation if needed
-
-
-            // this.setState({
-            //   imageSrc: imageDataUrl,
-            //   crop: { x: 0, y: 0 },
-            //   zoom: 1,
-            // })
+                this.setState({
+                    imageSrc: imageDataUrl,
+                    crop: {x: 0, y: 0},
+                    zoom: 1,
+                })
+                break
+            }
         }
+
+    }
+
+    cropImage() {
+        if (typeof this.cropper.getCroppedCanvas() === 'undefined') {
+            return;
+        }
+        this.setState({
+            cropResult: this.cropper.getCroppedCanvas().toDataURL(),
+        });
     }
 
     render() {
         return (
             <div className="App">
-                <input type="file" onChange={this.onFileChange}/>
                 <CSVReader cssClass="csv-reader-input"
 
                            onFileLoaded={this.onCsvLoaded}
@@ -103,52 +80,42 @@ class App extends React.Component {
                                {
                                    header: true,
                                    dynamicTyping: true,
-                                   skipEmptyLines: true,
-                                   transformHeader: header =>
-                                       header
-                                           .toLowerCase()
-                                           .replace(/\W/g, '_')
+                                   skipEmptyLines: true
                                }
                            }/>
-
-                {this.state.imageSrc && (
-                    <Fragment>
-                        <div className="crop-container">
-                            <Cropper
-                                image={this.state.imageSrc}
-                                crop={this.state.crop}
-                                zoom={this.state.zoom}
-                                aspect={this.state.aspect}
-                                onCropChange={this.onCropChange}
-                                onCropComplete={this.onCropComplete}
-                                onZoomChange={this.onZoomChange}
-                            />
+                <div>
+                    <div style={{width: '100%'}}>
+                        <Cropper
+                            style={{height: 400, width: '100%'}}
+                            aspectRatio={16 / 9}
+                            preview=".img-preview"
+                            guides={false}
+                            src={this.state.imageSrc}
+                            ref={cropper => {
+                                this.cropper = cropper;
+                            }}
+                        />
+                    </div>
+                    <div>
+                        <div className="box" style={{width: '50%', float: 'right'}}>
+                            <h1>Preview</h1>
+                            <div className="img-preview" style={{width: '100%', float: 'left', height: 300}}/>
                         </div>
-                        <div className="controls">
-                            <Slider
-                                value={this.state.zoom}
-                                min={1}
-                                max={3}
-                                step={0.1}
-                                aria-labelledby="Zoom"
-                                onChange={(e, zoom) => this.onZoomChange(zoom)}
-                                classes={{container: 'slider'}}
-                            />
+                        <div className="box" style={{width: '50%', float: 'right'}}>
+                            <h1>
+                                <span>Crop</span>
+                                <button onClick={this.cropImage} style={{float: 'right'}}>
+                                    Crop Image
+                                </button>
+                            </h1>
+                            <img style={{width: '100%'}} src={this.state.cropResult} alt="cropped image"/>
                         </div>
-                        <div className="button">
-                            <Button
-                                color="primary"
-                                variant="contained"
-                                onClick={this.showResult}
-                                disabled={this.state.isCropping}
-                            >
-                                Show result
-                            </Button>
-                        </div>
-                        <ImgDialog img={this.state.croppedImage} onClose={this.onClose}/>
-                    </Fragment>
-                )}
+                    </div>
+                    <br style={{clear: 'both'}}/>
+                </div>
             </div>
+
+
         )
     }
 }

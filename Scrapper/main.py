@@ -18,6 +18,8 @@ subreddits = [Brogress(), ProgressPics()]
 table = []
 stats = {}
 
+
+
 def write_table():
     with open(p / 'data.csv', 'a', newline='') as f:
         csv_out = csv.writer(f, delimiter=',')
@@ -26,7 +28,7 @@ def write_table():
 
 def delete(to_delete):
     csv_path = p / "data.csv"
-    df = pd.read_csv(csv_path)
+    df = pd.read_csv(csv_path,  index_col=[0])
     for d in to_delete:
         os.remove(pimg / d)
         df = df[df.path != d.split(".jpg")[0]]
