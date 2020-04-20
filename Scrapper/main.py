@@ -24,7 +24,7 @@ c_format = logging.Formatter('%(name)s - %(levelname)s - %(message)s')
 f_format = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 c_handler.setFormatter(c_format)
 f_handler.setFormatter(f_format)
-logger = logging.getLogger('runtime')
+logger = logging.getLogger('crawler')
 # Add handlers to the logger
 logger.addHandler(c_handler)
 logger.addHandler(f_handler)
@@ -50,11 +50,11 @@ def write_table():
 
 def delete(to_delete):
     csv_path = p / "data.csv"
-    df = pd.read_csv(csv_path, index_col=[0])
+    df = pd.read_csv(csv_path)
     for d in to_delete:
         os.remove(pimg / d)
         df = df[df.path != d.split(".jpg")[0]]
-    df.to_csv(csv_path, index=False)
+    df.to_csv(csv_path)
     logger.info(f"Deleted {len(to_delete)} entries")
 
 
@@ -63,14 +63,15 @@ with open(p / 'data.csv', 'w', newline='') as f:
     csv_out.writerow(Entry._fields)
 
 for idx, subreddit in enumerate(subreddits):
-    stats[subreddit.name] = {'correct': 0, 'error': 0}
+    stats[subreddit.name] = {'correct': 0, 'image': 0, 'parse': 0}
     for idx2, (entry, post) in enumerate(subreddit.process()):
-
-        if entry and save_image(post):
+        image = save_image(post)
+        if entry and image:
             table.append(entry)
             stats[subreddit.name]['correct'] = stats[subreddit.name]['correct'] + 1
         else:
-            stats[subreddit.name]['error'] = stats[subreddit.name]['error'] + 1
+            reason = "image" if not image else "parse"
+            stats[subreddit.name][reason] = stats[subreddit.name][reason] + 1
         if idx2 % 500 == 0 and idx2 != 0:
             logger.debug(f"{idx2} from {subreddit.name}")
 
@@ -133,8 +134,7 @@ df['path'] = str(pimg) + df['id'].astype(str) + ".jpg"
 
 logger.info(stats)
 strftime = "%H:%M:%S"
-end_time = datetime.now().strftime(strftime)
-
-logger.info(f"Took {end_time - start_time} to complete")
+end_time = datetime.now() - start_time
+logger.info(f"Took {end_time.strftime(strftime)} to complete")
 logger.info(f'Found {len(duplicates)} duplicates')
 logger.info(f'Found {len(no_faces)} with no faces')
