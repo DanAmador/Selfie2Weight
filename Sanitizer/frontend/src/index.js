@@ -1,29 +1,49 @@
-import React, {Fragment} from 'react'
+import React from 'react'
 import ReactDOM from 'react-dom'
 import './styles.css'
-import CSVReader from 'react-csv-reader'
 import Cropper from 'react-cropper';
 import 'cropperjs/dist/cropper.css'; // see installation section above for versions of NPM older than 3.0.0
 
 const cropper = React.createRef(null);
+const BASE_URL = "http://127.0.0.1:5000"
 
 class App extends React.Component {
     state = {
         imageSrc: null,
-        csvSrc: null,
         crop: {x: 0, y: 0},
         zoom: 1,
-        aspect: 4 / 3,
         croppedAreaPixels: null,
         croppedImage: null,
         isCropping: false,
         cropResult: null,
+        currCrop: 0,
+        cropData: {},
+        imgMeta: null,
     }
 
     constructor(props) {
         super(props);
         this.cropImage = this.cropImage.bind(this);
         this.onChange = this.onChange.bind(this);
+        this.onNext = this.onNext.bind(this);
+        this.onNext()
+    }
+
+    onNext(e) {
+        fetch(`${BASE_URL}/next`).then(
+            res => {
+                return res.json();
+            }
+        ).then(data => {
+            console.log(data)
+            this.setState({
+                imgMeta: data,
+                imageSrc: `${BASE_URL}/img/${data["id"]}`,
+                crop: {x: 0, y: 0},
+                zoom: 1,
+            })
+
+        })
     }
 
     onChange(e) {
@@ -41,59 +61,37 @@ class App extends React.Component {
         reader.readAsDataURL(files[0]);
     }
 
-    onCsvLoaded = async (data, fileInfo) => {
-        console.log(fileInfo)
-        console.log(data)
-        for (let entry in data) {
-            let e = data[entry]
-            if (e.sanitized === "False") {
-                console.log(e.id)
-                let imageDataUrl = "http://127.0.0.1:5000/img/" + e.id
-
-                this.setState({
-                    imageSrc: imageDataUrl,
-                    crop: {x: 0, y: 0},
-                    zoom: 1,
-                })
-                break
-            }
-        }
-
-    }
 
     cropImage() {
         if (typeof this.cropper.getCroppedCanvas() === 'undefined') {
             return;
         }
+
+        let crops = this.state.cropData;
+        console.log(crops)
+        crops[this.state.currCrop] = this.cropper.getData()
         this.setState({
             cropResult: this.cropper.getCroppedCanvas().toDataURL(),
+            cropData: crops
         });
     }
 
     render() {
         return (
             <div className="App">
-                <CSVReader cssClass="csv-reader-input"
 
-                           onFileLoaded={this.onCsvLoaded}
-                           parserOptions={
-                               {
-                                   header: true,
-                                   dynamicTyping: true,
-                                   skipEmptyLines: true
-                               }
-                           }/>
                 <div>
                     <div style={{width: '100%'}}>
                         <Cropper
                             style={{height: 400, width: '100%'}}
-                            aspectRatio={16 / 9}
                             preview=".img-preview"
                             guides={false}
                             src={this.state.imageSrc}
                             ref={cropper => {
                                 this.cropper = cropper;
                             }}
+                            guides={false}
+
                         />
                     </div>
                     <div>
@@ -107,6 +105,7 @@ class App extends React.Component {
                                 <button onClick={this.cropImage} style={{float: 'right'}}>
                                     Crop Image
                                 </button>
+
                             </h1>
                             <img style={{width: '100%'}} src={this.state.cropResult} alt="cropped image"/>
                         </div>
@@ -118,14 +117,6 @@ class App extends React.Component {
 
         )
     }
-}
-
-function readFile(file) {
-    return new Promise(resolve => {
-        const reader = new FileReader()
-        reader.addEventListener('load', () => resolve(reader.result), false)
-        reader.readAsDataURL(file)
-    })
 }
 
 const rootElement = document.getElementById('root')
