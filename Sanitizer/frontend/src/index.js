@@ -2,7 +2,10 @@ import React from 'react'
 import ReactDOM from 'react-dom'
 import './styles.css'
 import Cropper from 'react-cropper';
+
 import 'cropperjs/dist/cropper.css'; // see installation section above for versions of NPM older than 3.0.0
+import CropGallery from "./cropGallery"
+import {Grid} from 'semantic-ui-react'
 
 const cropper = React.createRef(null);
 const BASE_URL = "http://127.0.0.1:5000"
@@ -15,9 +18,9 @@ class App extends React.Component {
         croppedAreaPixels: null,
         croppedImage: null,
         isCropping: false,
-        cropResult: null,
         currCrop: 0,
-        cropData: {},
+        cropData: [],
+        cropMeta: [],
         imgMeta: null,
     }
 
@@ -26,6 +29,8 @@ class App extends React.Component {
         this.cropImage = this.cropImage.bind(this);
         this.onChange = this.onChange.bind(this);
         this.onNext = this.onNext.bind(this);
+        this.onIndexChange = this.onIndexChange.bind(this);
+
         this.onNext()
     }
 
@@ -35,12 +40,14 @@ class App extends React.Component {
                 return res.json();
             }
         ).then(data => {
+            let temp = [{weight: data["start_weight"]}, {weight: data["end_weight"]}]
             console.log(data)
             this.setState({
                 imgMeta: data,
                 imageSrc: `${BASE_URL}/img/${data["id"]}`,
                 crop: {x: 0, y: 0},
                 zoom: 1,
+                cropMeta: temp
             })
 
         })
@@ -62,59 +69,59 @@ class App extends React.Component {
     }
 
 
+
     cropImage() {
         if (typeof this.cropper.getCroppedCanvas() === 'undefined') {
             return;
         }
 
         let crops = this.state.cropData;
-        console.log(crops)
         crops[this.state.currCrop] = this.cropper.getData()
         this.setState({
-            cropResult: this.cropper.getCroppedCanvas().toDataURL(),
             cropData: crops
         });
     }
 
+    onIndexChange(e){
+        console.log(e)
+    }
     render() {
         return (
+
             <div className="App">
+                <Grid columns='two' divided>
 
-                <div>
-                    <div style={{width: '100%'}}>
-                        <Cropper
-                            style={{height: 400, width: '100%'}}
-                            preview=".img-preview"
-                            guides={false}
-                            src={this.state.imageSrc}
-                            ref={cropper => {
-                                this.cropper = cropper;
-                            }}
-                            guides={false}
+                    <Grid.Column width={4}>
+                        {this.state.cropMeta.map((d, idx) => <CropGallery callback={this.onIndexChange} key={idx + "img"}
+                                                                          index={idx} meta={d}
+                                                                          info={this.state.cropData[idx]}/>)}
+                    </Grid.Column>
+                    <Grid.Column width={8}>
 
-                        />
-                    </div>
-                    <div>
-                        <div className="box" style={{width: '50%', float: 'right'}}>
-                            <h1>Preview</h1>
-                            <div className="img-preview" style={{width: '100%', float: 'left', height: 300}}/>
+                        <div>
+                            <Cropper
+                                style={{height: 400, width: '100%'}}
+                                guides={false}
+                                src={this.state.imageSrc}
+                                ref={cropper => {
+                                    this.cropper = cropper;
+                                }}
+                            />
                         </div>
-                        <div className="box" style={{width: '50%', float: 'right'}}>
-                            <h1>
-                                <span>Crop</span>
+                        <div>
+                            <div className="box" style={{width: '50%', float: 'right'}}>
                                 <button onClick={this.cropImage} style={{float: 'right'}}>
                                     Crop Image
                                 </button>
 
-                            </h1>
-                            <img style={{width: '100%'}} src={this.state.cropResult} alt="cropped image"/>
+
+                            </div>
                         </div>
-                    </div>
-                    <br style={{clear: 'both'}}/>
-                </div>
+                        <br style={{clear: 'both'}}/>
+                    </Grid.Column>
+                </Grid>
+
             </div>
-
-
         )
     }
 }
