@@ -1,44 +1,59 @@
 import React from 'react';
 
-import {Card, Image} from 'semantic-ui-react'
+import {Card, Image, Input, Grid} from 'semantic-ui-react'
 
 
 class CropGallery extends React.Component {
-
+    state = {
+        meta: {}
+    }
 
     constructor(props) {
         super(props);
-
+        this.onChange = this.onChange.bind(this)
+        this.state = {
+            imgUrl: null,
+            data: this.props.info,
+            selected: false,
+            saved: false
+        }
     }
 
-    getMeta(o) {
-        let m = []
-        for (let key in o) {
-            m.push(<p key={key + "gallery"}><b>{key}:</b> {o[key]}</p>);
-        }
-        return m
+    onChange(e, d) {
+        let copy = this.state.data
+        copy[d["label"]] = d["value"]
+        this.setState({
+            data: copy
+        })
     }
 
     render() {
         return (
+
             <Card as="button" onClick={e => this.props.callback(this.props.index)}>
-                <Image src={this.props.imgUrl} wrapped ui={false}/>
                 <Card.Content>
-                    <Card.Meta>
-                        {this.getMeta(this.props.infonfo)}
-                    </Card.Meta>
+                <Card.Meta><span>Index: {this.props.index}</span></Card.Meta>
 
-                    <Card.Description>
+                    <Grid rows={2}>
 
+                        <Grid.Row>
+                            <Image src={this.state.imgUrl} fluid rounded style={{maxHeight: 200}}/>
 
-                    </Card.Description>
+                        </Grid.Row>
+                        <Grid.Row columns={3} centered>
+                            {Object.keys(this.state.data).filter(k => k != "id").map((key, idx) =>
 
-                    <Card.Content extra>
-                        <a>
-                            {this.getMeta(this.props.meta)}
+                                <Input label={key}
+                                       key={"cropGaller_Input_" + idx}
+                                       onChange={this.onChange}
+                                       labelPosition='right corner'
+                                       value={this.state.data[key]}
+                                       size={"small"}/>
+                            )}
+                        </Grid.Row>
 
-                        </a>
-                    </Card.Content>
+                    </Grid>
+
                 </Card.Content>
 
             </Card>
