@@ -1,0 +1,66 @@
+import hashlib
+import urllib
+from pathlib import Path
+import logging
+from typing import List
+
+import cv2
+import os
+from .dataset_logger import dataset_logger as logger
+
+faceCascade = cv2.CascadeClassifier("haarcascade_frontalface_default.xml")
+p = Path.cwd() / 'dump'
+pimg = (p / 'img')
+
+
+def save_image(post):
+    try:
+        if post.url.endswith(".jpg"):
+            response = urllib.request.urlopen(post.url)
+            img = response.read()
+
+            name = str(post.id) + '.jpg'
+            pimg = Path.cwd() / 'dump' / 'img'
+            if not pimg.is_dir():
+                pimg.mkdir(parents=True, exist_ok=True)
+            with open(pimg / name, 'wb') as f:
+                f.write(img)
+                return True, pimg / name
+        return False, None
+    except Exception as e:
+        # logging.getLogger('crawler').error(e)
+        return False, None
+
+
+def check_duplicates() -> List[str]:
+    hash_keys = {}
+    duplicates = []
+    for index, filename in enumerate(os.listdir(pimg)):
+        if (pimg / filename).is_file():
+            try:
+                with open(pimg / filename, 'rb') as f:
+                    if index % 1000 == 0:
+                        print(index)
+                    filehash = hashlib.md5(f.read()).hexdigest()
+
+                    if filehash not in hash_keys:
+                        hash_keys[filehash] = filename
+                    else:
+                        duplicates.append(filename)
+            except Exception as e:
+                logger.error(e)
+                duplicates.append(filename)
+    logger.info(f'Found {len(duplicates)} duplicates')
+
+    return duplicates
+
+
+def has_faces(img_path) -> bool:
+    image = cv2.imread(img_path.as_posix(), 0)
+    faces = faceCascade.detectMultiScale(
+        image,
+        scaleFactor=1.1,
+        minNeighbors=5,
+        minSize=(30, 30)
+    )
+    return len(faces) == 0

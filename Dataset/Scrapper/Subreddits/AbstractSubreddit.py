@@ -3,13 +3,13 @@ from typing import Tuple
 
 from psaw import PushshiftAPI
 
-from Scrapper.Subreddits.util import Entry
+from Dataset.util.data_classes import RawEntry
 
 
 class AbstractSubreddit(ABC):
 
     @abstractmethod
-    def parse_post(self, post) -> Entry:
+    def parse_post(self, post) -> RawEntry:
         pass
 
     def __init__(self) -> None:

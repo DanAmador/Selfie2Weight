@@ -1,7 +1,7 @@
-import urllib
-
-from Scrapper.Subreddits.AbstractSubreddit import AbstractSubreddit, Entry
+from Dataset.Scrapper.Subreddits.AbstractSubreddit import AbstractSubreddit
 import re
+
+from Dataset.util.data_classes import RawEntry
 
 
 class ProgressPics(AbstractSubreddit):
@@ -15,7 +15,7 @@ class ProgressPics(AbstractSubreddit):
         self.inches_regex = re.compile("(\d+)['+ | ’] *(\d+)(?:\"|'')?")
         self.pound_list = ["lb", "lbs", "pounds", "pound"]
 
-    def parse_post(self, post) -> Entry:
+    def parse_post(self, post) -> RawEntry:
         match = self.group_regex.match(post.title)
         if match:
             height, height_parse_status = self.str2meter(match[4])
@@ -23,7 +23,8 @@ class ProgressPics(AbstractSubreddit):
             weights, bracket_status = self.get_bracket_weights(bracket_string)
             # , "age sex height start_weight end_weight id")
             if bracket_status and post.url.endswith(".jpg") and height_parse_status:
-                return Entry(match[2], match[3], height, max(weights), min(weights), post.id, False, post.id)
+                return RawEntry(sex=match[2], age=int(match[3]), height=height, start_weight=max(weights),
+                                end_weight=min(weights), reddit_id=post.id, img_url=post.url)
 
             return None
 
