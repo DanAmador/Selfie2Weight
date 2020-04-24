@@ -2,9 +2,9 @@ import os
 from datetime import datetime
 from pathlib import Path
 
-import Dataset.util.db_wrapper as db
+import Dataset.util.db.db_wrapper as db
 from Dataset.Scrapper.Subreddits import ProgressPics, Brogress
-from Dataset.util.data_classes import RawEntry
+from Dataset.util.db.model import RawEntry
 from Dataset.util.dataset_logger import dataset_logger as logger
 from Dataset.util.image_util import save_image, has_faces, check_duplicates
 import argparse
@@ -20,46 +20,62 @@ stats = {}
 
 
 def delete_files(to_delete_list):
+    counter = 0
     for d in to_delete_list:
-        os.remove(pimg / d)
-    logger.info(f"Deleted {len(to_delete_list)} entries")
+        try:
+            os.remove(pimg / d)
+            counter += 1
+        except Exception:
+            continue
+    logger.info(f"Deleted {counter} entries")
 
 
-def extract_features_from_api(image_save_flag=True):
+def extract_features_from_api():
     for idx, subreddit in enumerate(subreddits):
         stats[subreddit.name] = {'correct': 0, 'error': 0}
         for idx2, (entry, post) in enumerate(subreddit.process()):
-            image, local_img_path = save_image(post) if image_save_flag else (True, None)
 
-            if entry and image:
-                db_wrapper.insert_into(dataclass_instance=entry)
+            if entry and db_wrapper.save_object(entry):
                 stats[subreddit.name]['correct'] = stats[subreddit.name]['correct'] + 1
             else:
                 stats[subreddit.name]['error'] = stats[subreddit.name]['error'] + 1
             if idx2 % 500 == 0 and idx2 != 0:
-                logger.debug(f"{idx2} from {subreddit.name}")
+                logger.debug(f"{idx2} extracted from {subreddit.name}")
+
+
+def download_images():
+    to_delete = []
+    for entry in RawEntry.query.filter_by("sanitized" == False).all():
+        success, p = save_image(entry)
+        updated = False
+        if success:
+            entry.local_url = p
+            db_wrapper.save_object(entry)
+        if not updated or not success:
+            to_delete.append(entry)
+
+    delete_files([e.local_url for e in to_delete])
+    db_wrapper.delete_objects(to_delete)
 
 
 def get_pictures_without_faces():
     logger.info("Checking faces")
     no_faces_list = []
-    for index, filename in enumerate(os.listdir(pimg)):
-        fpath = pimg / filename
+    for index, fpath in enumerate(pimg.glob("**.jpg")):
         if fpath.is_file():
             try:
                 if index % 200 == 0:
                     print(index)
                 if not has_faces(fpath):
-                    no_faces_list.append(filename)
+                    no_faces_list.append(fpath)
             except Exception as e:
                 logger.error(e)
-                no_faces_list.append(filename)
+                no_faces_list.append(fpath)
     return no_faces_list
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("--image", help="Save images", type=bool)
     parser.add_argument("--clean", help="Delete duplicates/pictures without faces", type=bool)
     args = parser.parse_args()
 
@@ -71,11 +87,11 @@ if __name__ == '__main__':
     if args.clean:
         duplicates = check_duplicates()
 
-        db_wrapper.delete_by(table_name="raw_entry", filter_key="img_url", to_delete_list=duplicates)
+        db_wrapper.delete_objects(table_name="raw_entry", filter_key="img_url", to_delete_list=duplicates)
         delete_files(duplicates)
 
         no_faces = get_pictures_without_faces()
-        db_wrapper.delete_by(table_name="raw_entry", filter_key="img_url", to_delete_list=no_faces)
+        db_wrapper.delete_objects(table_name="raw_entry", filter_key="img_url", to_delete_list=no_faces)
         delete_files(no_faces)
         logger.info(f'Found {len(no_faces)} with no faces')
 
