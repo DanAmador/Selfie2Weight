@@ -1,13 +1,12 @@
+import argparse
 import os
 from datetime import datetime
 from pathlib import Path
 
 import Dataset.util.db.db_wrapper as db
 from Dataset.Scrapper.Subreddits import ProgressPics, Brogress
-from Dataset.util.db.model import RawEntry
 from Dataset.util.dataset_logger import dataset_logger as logger
 from Dataset.util.image_util import save_image, has_faces, check_duplicates
-import argparse
 
 p = Path.cwd() / 'dump'
 db_wrapper = db.DBWrapper()
@@ -45,12 +44,11 @@ def extract_features_from_api():
 
 def download_images():
     to_delete = []
-    for entry in RawEntry.query.filter_by("sanitized" == False).all():
+    for entry in db_wrapper.get_unsanitized():
         success, p = save_image(entry)
         updated = False
         if success:
             entry.local_url = p
-            db_wrapper.save_object(entry)
         if not updated or not success:
             to_delete.append(entry)
 
@@ -77,6 +75,7 @@ def get_pictures_without_faces():
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--clean", help="Delete duplicates/pictures without faces", type=bool)
+    parser.add_argument("--images", help="Download images", type=bool)
     args = parser.parse_args()
 
     start_time = datetime.now()
@@ -84,15 +83,18 @@ if __name__ == '__main__':
     logger.error("Starting")
     extract_features_from_api()
 
-    if args.clean:
-        duplicates = check_duplicates()
+    if args.images:
+        download_images()
 
-        db_wrapper.delete_objects(table_name="raw_entry", filter_key="img_url", to_delete_list=duplicates)
-        delete_files(duplicates)
-
-        no_faces = get_pictures_without_faces()
-        db_wrapper.delete_objects(table_name="raw_entry", filter_key="img_url", to_delete_list=no_faces)
-        delete_files(no_faces)
+    # if args.clean:
+    #     duplicates = check_duplicates()
+    #
+    #     db_wrapper.delete_objects(duplicates)
+    #     delete_files(duplicates)
+    #
+    #     no_faces = get_pictures_without_faces()
+    #     db_wrapper.delete_objects(no_faces)
+    #     delete_files(no_faces)
         logger.info(f'Found {len(no_faces)} with no faces')
 
     logger.info(stats)

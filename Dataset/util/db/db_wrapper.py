@@ -7,6 +7,7 @@ from Dataset.util.dataset_logger import dataset_logger as logger
 from sqlalchemy import create_engine
 
 from Dataset.util.db.base_class import Base
+from Dataset.util.db.model import RawEntry
 
 p = Path().cwd().parent / "Scrapper" / 'dump'
 
@@ -19,46 +20,15 @@ class DBWrapper:
         print(db_path)
 
         engine = create_engine(f"sqlite:///{db_path}")
-        Session = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-        self.session = Session()
+        self.SessionClass = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+        self.session = self.SessionClass()
         Base.metadata.create_all(bind=engine)
 
-    #
-    # def start_tables(self):
-    #
-    #     create_sanitized_table = """ CREATE TABLE IF NOT EXISTS sanitized (
-    #                                             reddit_id TEXT NOT NULL,
-    #                                             id TEXT PRIMARY KEY,
-    #                                             sex char NOT NULL,
-    #                                             age INTEGER NOT NULL,
-    #                                             height REAL NOT NULL,
-    #                                             weight REAL NOT NULL
-    #                                         ); """
-    #
-    #     create_raw_table = """ CREATE TABLE IF NOT EXISTS raw_entry (
-    #                                             sex char NOT NULL,
-    #                                             age INTEGER NOT NULL,
-    #                                             height REAL NOT NULL,
-    #                                             start_weight REAL NOT NULL,
-    #                                             end_weight REAL NOT NULL,
-    #                                             reddit_id TEXT NOT NULL,
-    #                                             img_url TEXT NOT NULL,
-    #                                             local_url TEXT,
-    #                                             sanitized INTEGER default 0
-    #                                         ); """
-    #     try:
-    #
-    #         c = self.conn.cursor()
-    #         c.execute(create_raw_table)
-    #         c.execute(create_sanitized_table)
-    #     except Exception as e:
-    #         logger.error(f" Error at db wrapper {str(e)}")
+    def get_unsanitized(self):
+        return self.session.query(RawEntry).filter_by(sanitized=False).all()
 
-    def update(self, dataclass):
-        with self.conn:
-            columns, values = self._info_from_dataclass(dataclass)
-            set_str = ",".join([f"{c} = v" for c, v in zip(columns, values)])
-            update_str = f"UPDATE {dataclass.tablename} set {set_str} where id = {dataclass.id}"
+    def get_by(self, model, key, val):
+        return self.session.query(model).filter_by({key: val})
 
     def delete_objects(self, to_delete_list):
         errors = 0
