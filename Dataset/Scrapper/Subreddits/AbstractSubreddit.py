@@ -3,7 +3,7 @@ from typing import Tuple
 
 from psaw import PushshiftAPI
 
-from Dataset.util.data_classes import RawEntry
+from Dataset.util.db.model import RawEntry
 
 
 class AbstractSubreddit(ABC):

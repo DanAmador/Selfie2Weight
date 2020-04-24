@@ -6,6 +6,8 @@ from typing import List
 
 import cv2
 import os
+
+from .db.model import RawEntry
 from .dataset_logger import dataset_logger as logger
 
 faceCascade = cv2.CascadeClassifier("haarcascade_frontalface_default.xml")
@@ -13,13 +15,13 @@ p = Path.cwd() / 'dump'
 pimg = (p / 'img')
 
 
-def save_image(post):
+def save_image(raw_entry: RawEntry):
     try:
-        if post.url.endswith(".jpg"):
-            response = urllib.request.urlopen(post.url)
+        if raw_entry.img_url.endswith(".jpg"):
+            response = urllib.request.urlopen(raw_entry.img_url)
             img = response.read()
 
-            name = str(post.id) + '.jpg'
+            name = str(raw_entry.reddit_id) + '.jpg'
             pimg = Path.cwd() / 'dump' / 'img'
             if not pimg.is_dir():
                 pimg.mkdir(parents=True, exist_ok=True)

@@ -1,7 +1,7 @@
 from Dataset.Scrapper.Subreddits.AbstractSubreddit import AbstractSubreddit
 import re
 
-from Dataset.util.data_classes import RawEntry
+from Dataset.util.db.model import RawEntry
 
 
 class ProgressPics(AbstractSubreddit):
