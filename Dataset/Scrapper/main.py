@@ -41,19 +41,19 @@ def extract_features_from_api():
             if idx2 % 500 == 0 and idx2 != 0:
                 logger.debug(f"{idx2} extracted from {subreddit.name}")
 
-
-def download_images():
-    to_delete = []
-    for entry in db_wrapper.get_unsanitized():
-        success, p = save_image(entry)
-        updated = False
-        if success:
-            entry.local_url = p
-        if not updated or not success:
-            to_delete.append(entry)
-
-    delete_files([e.local_url for e in to_delete])
-    db_wrapper.delete_objects(to_delete)
+#TODO fix this to use metadata table
+# def download_images():
+#     to_delete = []
+#     for entry in db_wrapper.get_unsanitized():
+#         success, p = save_image(entry)
+#         updated = False
+#         if success:
+#             entry.local_url = p
+#         if not updated or not success:
+#             to_delete.append(entry)
+#
+#     delete_files([e.local_url for e in to_delete])
+#     db_wrapper.delete_objects(to_delete)
 
 
 def get_pictures_without_faces():
@@ -83,19 +83,19 @@ if __name__ == '__main__':
     logger.error("Starting")
     extract_features_from_api()
 
-    if args.images:
-        download_images()
-
+    # if args.images:
+    #     download_images()
+    #
     # if args.clean:
     #     duplicates = check_duplicates()
     #
-    #     db_wrapper.delete_objects(duplicates)
+    #     db_wrapper.delete_objects(duplicates, db.session_scope())
     #     delete_files(duplicates)
     #
     #     no_faces = get_pictures_without_faces()
-    #     db_wrapper.delete_objects(no_faces)
+    #     db_wrapper.delete_objects(no_faces,db.session_scope())
     #     delete_files(no_faces)
-        logger.info(f'Found {len(no_faces)} with no faces')
+    #     logger.info(f'Found {len(no_faces)} with no faces')
 
     logger.info(stats)
 

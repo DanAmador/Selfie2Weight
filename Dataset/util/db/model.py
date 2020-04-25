@@ -15,12 +15,8 @@ class RawEntry(Base):
     end_weight = Column(Float, nullable=False)
     reddit_id = Column(String, primary_key=True)
     img_url = Column(String, nullable=False)
-    local_url = Column(String, default=None)
     sanitized = Column(Boolean, default=False, nullable=False)
     sanitized_entries = relationship("SanitizedEntry")
-    @property
-    def tablename(self) -> str:
-        return "raw_entry"
 
 
 class SanitizedEntry(Base):
