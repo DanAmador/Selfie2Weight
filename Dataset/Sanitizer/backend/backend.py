@@ -1,11 +1,11 @@
 from functools import wraps
 from pathlib import Path
 from flask import Flask
-from flask import send_file, request
+from flask import send_file, request, Response
 from flask_cors import CORS, cross_origin
 
 from Dataset.util.db.db_wrapper import DBWrapper
-from Dataset.util.db.model import RawEntry
+from Dataset.util.db.model import RawEntry, SanitizedEntry
 import json
 
 app = Flask(__name__)
@@ -24,20 +24,28 @@ def get_image_info(image_id, ):
 @app.route('/next')
 def next_unsanitized(**kwargs):
     with db.session_scope() as session:
-        res = db.get_unsanitized(session, all=False)
-        return res.as_dict
+        res = db.get_unsanitized(session, get_first=True)
+        if res:
+            return res.as_dict
+        return Response({}, status=400)
 
 
 @app.route("/img/<image_id>", methods=["POST"])
 def save(image_id):
     try:
         body = json.loads(request.data)
-        # df = df.loc[df["id"] == image_id, "sanitized"]
+        if body:
+                for entry in body:
+                    with db.session_scope() as session:
+
+                        meta = entry["meta"]
+                        sanitized = SanitizedEntry(x=meta["x"], y=meta["y"], weight=entry["data"]["weight"],
+                                 width=meta["width"], height=meta["height"], reddit_id=image_id)
+                        db.save_object(sanitized, session=session)
+
+                return Response({}, status=201)
     except Exception as e:
         print(e)
-
-    # #     TODO crop image from request info
-    # return df.loc[df["sanitized"] == False].iloc[random.randint(0, 20)].to_json()
 
 
 if __name__ == '__main__':
