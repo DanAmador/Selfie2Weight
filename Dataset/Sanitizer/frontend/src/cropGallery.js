@@ -1,6 +1,6 @@
 import React from 'react';
 
-import {Card, Image, Input, Grid} from 'semantic-ui-react'
+import {Card, Grid, Image, Input} from 'semantic-ui-react'
 
 
 class CropGallery extends React.Component {
@@ -15,7 +15,8 @@ class CropGallery extends React.Component {
             imgUrl: null,
             data: this.props.info,
             selected: false,
-            saved: false
+            index: this.props.index,
+            meta: null
         }
     }
 
@@ -27,27 +28,34 @@ class CropGallery extends React.Component {
         })
     }
 
+
+    setColor() {
+        return this.state.selected ? "red" : "black"
+    }
+
     render() {
         return (
 
-            <Card as="button" onClick={e => this.props.callback(this.props.index)}>
-                <Card.Content>
-                <Card.Meta><span>Index: {this.props.index}</span></Card.Meta>
+            <Card onClick={e => this.props.indexChangeCallback(this.state.index)} color={this.setColor()}
+                  style={{minWidth: 100}}>
+                <Card.Content as="button">
+                    <Card.Meta><span>Index: {this.state.index}</span></Card.Meta>
 
                     <Grid rows={2}>
 
 
-                        <Grid.Row columns={3} centered>
-                            {Object.keys(this.state.data).filter(k => k != "id").map((key, idx) =>
+                            {Object.keys(this.state.data).filter(k => k !== "id").map((key, idx) =>
 
                                 <Input label={key}
                                        key={"cropGaller_Input_" + idx}
                                        onChange={this.onChange}
                                        labelPosition='right corner'
                                        value={this.state.data[key]}
-                                       size={"small"}/>
+                                       fluid
+                                />
                             )}
-                        </Grid.Row>
+
+
                         <Grid.Row>
                             <Image src={this.state.imgUrl} fluid rounded style={{maxHeight: 200}}/>
 
@@ -55,10 +63,14 @@ class CropGallery extends React.Component {
                     </Grid>
 
                 </Card.Content>
-
+                {/*TODO Work on this */}
+                {/*<Button basic color='red' onClick={e => this.props.deleteCallback(this)}>*/}
+                {/*    Delete*/}
+                {/*</Button>*/}
             </Card>
         )
     }
+
 }
 
 export default CropGallery;
