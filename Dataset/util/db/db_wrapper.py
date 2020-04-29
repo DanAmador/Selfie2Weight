@@ -5,10 +5,11 @@ from pathlib import Path
 from sqlalchemy.orm import sessionmaker, scoped_session
 
 from Dataset.util.dataset_logger import dataset_logger as logger
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, and_
 
 from Dataset.util.db.base_class import Base
 from Dataset.util.db.model import RawEntry
+from  sqlalchemy.sql.expression import func, select
 
 p = Path().cwd().parent / "Scrapper" / 'dump'
 
@@ -18,7 +19,6 @@ class DBWrapper:
         db_path = db_path / "dump.sqlite"
         if not db_path.is_file():
             Path(db_path).touch()
-        print(db_path)
 
         engine = create_engine(f"sqlite:///{db_path}")
         self.SessionClass = scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=engine))
@@ -37,28 +37,21 @@ class DBWrapper:
         finally:
             session.close()
 
-    def get_unsanitized(self, session, all=True):
-        query = session.query(RawEntry).filter_by(sanitized=False)
-        if all:
-            return query.all()
-        return query.first()
+    @staticmethod
+    def get_unsanitized(session, get_first=False):
+        query = session.query(RawEntry).filter(
+            and_(RawEntry.has_been_sanitized == False, RawEntry.local_path.isnot(None))).order_by(func.random())
+        if get_first:
+            return query.first()
+        return query.all()
 
-    def get_by(self, model, key, val, session):
-        return session.query(model).filter_by(**{key: val}).first()
+    @staticmethod
+    def get_by(model, key, val, session, only_first=True):
+        q = session.query(model).filter_by(**{key: val})
+        return q.first() if only_first else q.all()
 
-    def delete_objects(self, to_delete_list, session):
-        errors = 0
-        for to_delete in to_delete_list:
-            try:
-                session.delete(to_delete)
-            except Exception:
-                errors += 1
-
-        logger.info(f"Deleted {len(to_delete_list) - errors} entries")
-        logger.error(f"Unsuccesfully deleted {errors} entries")
-
-
-    def save_object(self, model, session):
+    @staticmethod
+    def save_object(model, session):
         try:
             model.save(session)
             return True

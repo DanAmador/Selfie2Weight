@@ -9,6 +9,9 @@ import os
 
 from .db.model import RawEntry
 from .dataset_logger import dataset_logger as logger
+import Dataset.util.db.db_wrapper as db
+
+db_wrapper = db.DBWrapper()
 
 faceCascade = cv2.CascadeClassifier("haarcascade_frontalface_default.xml")
 p = Path.cwd() / 'dump'
@@ -66,3 +69,12 @@ def has_faces(img_path) -> bool:
         minSize=(30, 30)
     )
     return len(faces) == 0
+
+
+# TODO download images from cropData table
+def download_raw_images(session):
+    for entry in db_wrapper.get_by(RawEntry, "local_path", None, session=session, only_first=False):
+        succ, p = save_image(entry)
+        if succ:
+            entry.local_path = str(p)
+            db_wrapper.save_object(entry, session)
