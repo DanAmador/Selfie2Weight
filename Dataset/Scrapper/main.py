@@ -50,21 +50,6 @@ def extract_features_from_api():
                     logger.debug(f"{idx2} extracted from {subreddit.name}")
 
 
-# TODO fix this to use metadata table
-# def download_images():
-#     to_delete = []
-#     for entry in db_wrapper.get_unsanitized():
-#         success, p = save_image(entry)
-#         updated = False
-#         if success:
-#             entry.local_url = p
-#         if not updated or not success:
-#             to_delete.append(entry)
-#
-#     delete_files([e.local_url for e in to_delete])
-#     db_wrapper.delete_objects(to_delete)
-
-
 def get_pictures_without_faces():
     logger.info("Checking faces")
     no_faces_list = []
@@ -83,15 +68,14 @@ def get_pictures_without_faces():
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("--clean", help="Delete duplicates/pictures without faces", type=bool)
-    parser.add_argument("--images", help="Download images", type=bool)
+    parser.add_argument("--clean", help="Delete duplicates/pictures without faces", type=bool, default=True)
+    parser.add_argument("--images", help="Download images", type=bool, default=True)
     args = parser.parse_args()
 
     start_time = datetime.now()
 
     logger.info("Starting")
     extract_features_from_api()
-
     if args.images:
         with db_wrapper.session_scope() as session:
             download_raw_images(session)

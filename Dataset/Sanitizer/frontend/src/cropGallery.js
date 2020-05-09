@@ -43,17 +43,16 @@ class CropGallery extends React.Component {
 
                     <Grid rows={2}>
 
+                        {Object.keys(this.state.data).filter(k => k !== "id").map((key, idx) =>
 
-                            {Object.keys(this.state.data).filter(k => k !== "id").map((key, idx) =>
-
-                                <Input label={key}
-                                       key={"cropGaller_Input_" + idx}
-                                       onChange={this.onChange}
-                                       labelPosition='right corner'
-                                       value={this.state.data[key]}
-                                       fluid
-                                />
-                            )}
+                            <Input label={key}
+                                   type={"number"}
+                                   key={"cropGaller_Input_" + idx}
+                                   onChange={this.onChange}
+                                   labelPosition='left'
+                                   value={this.state.data[key]}
+                            />
+                        )}
 
 
                         <Grid.Row>

@@ -71,10 +71,15 @@ def has_faces(img_path) -> bool:
     return len(faces) == 0
 
 
-# TODO download images from cropData table
-def download_raw_images(session):
-    for entry in db_wrapper.get_by(RawEntry, "local_path", None, session=session, only_first=False):
-        succ, p = save_image(entry)
+# Go through table and delete images and delete entries without a valid image
+def download_raw_images(session, download_all=False):
+    query = session.query(RawEntry).all() if download_all else db_wrapper.get_by(RawEntry, "local_path", None,
+                                                                                 session=session, only_first=False)
+    for entry in query:
+        succ, path = save_image(entry)
         if succ:
-            entry.local_path = str(p)
+            entry.local_path = str(path)
             db_wrapper.save_object(entry, session)
+        else:
+            session.delete(entry)
+            session.commit()

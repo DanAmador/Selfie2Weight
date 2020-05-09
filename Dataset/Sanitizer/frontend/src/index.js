@@ -33,6 +33,17 @@ class App extends React.Component {
 
     }
 
+    keyMap = {
+        DELETE: 'q',
+        SUBMIT: 'tab',
+        CHANGE_INDEX: ' '
+    };
+    handlers = {
+        DELETE: this.onSendEmpty,
+        SUBMIT: this.onSave,
+        CHANGE_INDEX: this.onNextGallery
+    };
+
     constructor(props) {
         super(props);
         this.cropImage = this.cropImage.bind(this);
@@ -78,7 +89,6 @@ class App extends React.Component {
             }
         })
 
-        console.table(data)
         if (data.length !== 0) {
             this.postToServer(data,)
             this.onNext()
@@ -187,7 +197,6 @@ class App extends React.Component {
         affectedGallery.setState({
             imgUrl: this.cropper.getCroppedCanvas(meta).toDataURL(),
             meta: meta,
-            saved: true
         })
         this.onIndexChange((this.state.currCrop + 1) % this.galleryRefs.length)
 
@@ -310,6 +319,7 @@ class App extends React.Component {
                             ref={cropper => {
                                 this.cropper = cropper;
                             }}
+
                         />
                         <div>
                             <div className="box" style={{width: '50%', float: 'right'}}>
@@ -337,7 +347,7 @@ class App extends React.Component {
                         <br style={{clear: 'both'}}/>
                     </Grid.Row>
                     <Grid.Row>
-                        <Card.Group itemsPerRow={3}>
+                        <Card.Group>
                             {this.state.data.map((data, idx) =>
                                 <CropGallery indexChangeCallback={this.onIndexChange}
                                              deleteCallback={this.onGalleryDelete}

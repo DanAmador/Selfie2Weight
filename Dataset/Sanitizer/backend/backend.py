@@ -1,13 +1,13 @@
-from functools import wraps
+import json
 from pathlib import Path
+
 from flask import Flask
 from flask import send_file, request, Response
-from flask_cors import CORS, cross_origin
+from flask_cors import CORS
 
 from Dataset.util.db.db_wrapper import DBWrapper
 from Dataset.util.db.model import RawEntry, SanitizedEntry
-import json
-import requests
+from Dataset.util.dataset_logger import dataset_logger as logger
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////tmp/test.db'
@@ -18,9 +18,7 @@ CORS(app)
 @app.route('/img/<image_id>', methods=["GET"])
 def get_image_info(image_id):
     with db.session_scope() as session:
-        print(image_id)
         res: RawEntry = db.get_by(RawEntry, "reddit_id", image_id, session)
-        print(res.local_path)
         return send_file(res.local_path, mimetype='image/gif')
 
 
@@ -31,6 +29,8 @@ def next_unsanitized():
 
         if res:
             return res.as_dict
+        else:
+            logger.error("Could not find next unsanitized")
 
 
 def mark_as_empty(image_id, session):
