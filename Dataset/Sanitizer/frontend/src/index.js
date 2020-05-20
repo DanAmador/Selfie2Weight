@@ -37,10 +37,12 @@ class App extends React.Component {
         DELETE: 'q',
         SUBMIT: 's',
         NEW_GALLERY: 'z',
-        CHANGE_INDEX: [" ", "SpaceBar", ""]
+        CHANGE_INDEX: [" ", "SpaceBar", ""],
+        REMOVE_FREEDOM: 'x'
     };
     handlers = {
         NEW_GALLERY: e => this.onAddGallery(),
+        REMOVE_FREEDOM: e => this.onLbsConvert(),
         DELETE: e => this.onSendEmpty(),
         SUBMIT: e => this.onSave(),
         CHANGE_INDEX: e => this.onNextGallery(),
@@ -57,6 +59,8 @@ class App extends React.Component {
         this.onGalleryDelete = this.onGalleryDelete.bind(this);
         this.showToast = this.showToast.bind(this);
         this.onSendEmpty = this.onSendEmpty.bind(this);
+        this.onLbsConvert = this.onLbsConvert.bind(this);
+
         this.galleryRefs = []
         this.setGalleryRefs = element => {
             this.galleryRefs.push(element)
@@ -171,6 +175,7 @@ class App extends React.Component {
                 imgUrl: canvas === null ? "" : canvas.toDataURL(),
                 data: temp[idx],
                 selected: idx === this.state.currCrop,
+                toPound: false
             })
         })
 
@@ -236,6 +241,13 @@ class App extends React.Component {
         }
     }
 
+
+    onLbsConvert() {
+        this.galleryRefs.forEach(r => {
+            r.convertFreedomUnits()
+        });
+    }
+
     onGalleryDelete(gallery) {
         let length = this.state.data.length;
         let index = gallery.state.index;
@@ -262,7 +274,6 @@ class App extends React.Component {
         }
 
     }
-
 
     getCurrentInfo() {
         if (this.state.data.length !== 0) {
@@ -366,13 +377,20 @@ class App extends React.Component {
                                         <ButtonContent visible> Next</ButtonContent>
                                         <ButtonContent hidden> {this.keyMap.CHANGE_INDEX}</ButtonContent>
                                     </Button>
+
+
+                                    <Button animated onClick={this.onLbsConvert}
+                                            style={{float: 'right'}}>
+                                        <ButtonContent visible> Convert Units</ButtonContent>
+                                        <ButtonContent hidden> {this.keyMap.REMOVE_FREEDOM}</ButtonContent>
+                                    </Button>
                                     <Dropdown text='Guidelines' icon='question circle outline' floating labeled button
                                               className='icon'>
                                         <Dropdown.Menu>
                                             <Message
                                                 icon='inbox'
                                                 header='Guidelines'
-                                                content="Face must be present, no photo > shitty photo"
+                                                list={["Face must be present", " no photo > shitty photo", "no freedom units"]}
                                             />
                                         </Dropdown.Menu>
                                     </Dropdown>
@@ -400,7 +418,6 @@ class App extends React.Component {
             </div>
         )
     }
-
 
 }
 

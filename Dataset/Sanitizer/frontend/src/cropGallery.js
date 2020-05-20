@@ -1,6 +1,6 @@
 import React from 'react';
 
-import {Card, Grid, Image, Input} from 'semantic-ui-react'
+import {Card, Grid, Image, Input, Button} from 'semantic-ui-react'
 
 
 class CropGallery extends React.Component {
@@ -11,12 +11,23 @@ class CropGallery extends React.Component {
     constructor(props) {
         super(props);
         this.onChange = this.onChange.bind(this)
+        this.convertFreedomUnits = this.convertFreedomUnits.bind(this)
         this.state = {
             imgUrl: null,
             data: this.props.info,
             selected: false,
             index: this.props.index,
-            meta: null
+            meta: null,
+            toPound: true
+        }
+    }
+
+    convertFreedomUnits() {
+        if (this.state.data) {
+            let {weight} = this.state.data
+            let tp = this.state.toPound;
+            let constant = tp ? 0.453592 : 2.20462;
+            this.setState({data: {weight: (weight * constant).toFixed(3)}, toPound: !tp})
         }
     }
 
@@ -38,26 +49,29 @@ class CropGallery extends React.Component {
 
             <Card onClick={e => this.props.indexChangeCallback(this.state.index)} color={this.setColor()}
                   style={{minWidth: 300}}>
-                <Card.Content as="button">
+                <Card.Content>
                     <Card.Meta><span>Index: {this.state.index}</span></Card.Meta>
 
                     <Grid rows={2}>
-
-                        {Object.keys(this.state.data).filter(k => k !== "id").map((key, idx) =>
-
-                            <Input label={key}
-                                   type={"number"}
-                                   key={"cropGaller_Input_" + idx}
-                                   onChange={this.onChange}
-                                   labelPosition='left'
-                                   value={this.state.data[key]}
-                            />
-                        )}
-
+                        <Grid.Row>
+                            {Object.keys(this.state.data).filter(k => k !== "id").map((key, idx) =>
+                                <Grid.Column key={"cropGaller_Input_" + idx}>
+                                    <Input label={key}
+                                           type={"number"}
+                                           onChange={this.onChange}
+                                           labelPosition='left'
+                                           value={this.state.data[key]}
+                                    />
+                                </Grid.Column>
+                            )}
+                        </Grid.Row>
 
                         <Grid.Row>
-                            <Image src={this.state.imgUrl} fluid rounded style={{maxHeight: 200}}/>
+                            <Grid.Column>
+                                <Button onClick={this.convertFreedomUnits}>To KG</Button>
 
+                                <Image src={this.state.imgUrl} fluid rounded style={{maxHeight: 200}}/>
+                            </Grid.Column>
                         </Grid.Row>
                     </Grid>
 
