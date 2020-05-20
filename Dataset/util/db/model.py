@@ -1,6 +1,4 @@
-from dataclasses import dataclass
 from sqlalchemy import Column, String, Integer, Float, ForeignKey, Boolean
-from sqlalchemy import Enum as EnumDB
 from sqlalchemy.orm import relationship
 
 from Dataset.util.db.base_class import Base
