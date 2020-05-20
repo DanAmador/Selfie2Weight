@@ -9,7 +9,7 @@ import {Grid, Card, Header, List, Icon, Popup} from 'semantic-ui-react'
 import {ToastContainer, toast} from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-import {HotKeys} from "react-hotkeys";
+import {GlobalHotKeys, getApplicationKeyMap} from "react-hotkeys";
 
 const cropper = React.createRef(null);
 const BASE_URL = "http://127.0.0.1:5000"
@@ -35,13 +35,15 @@ class App extends React.Component {
 
     keyMap = {
         DELETE: 'q',
-        SUBMIT: 'tab',
-        CHANGE_INDEX: ' '
+        SUBMIT: 'w',
+        CHANGE_INDEX: 'a',
+        CROP: 's'
     };
     handlers = {
-        DELETE: this.onSendEmpty,
-        SUBMIT: this.onSave,
-        CHANGE_INDEX: this.onNextGallery
+        DELETE: e => this.onSendEmpty(),
+        SUBMIT: e => this.onSave(),
+        CHANGE_INDEX: e => this.onNextGallery(),
+        CROP: e => this.cropImage()
     };
 
     constructor(props) {
@@ -61,24 +63,24 @@ class App extends React.Component {
         }
     }
 
-    postToServer(data) {
+    postToServer(data,) {
         const requestOptions = {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify(data)
         };
-
+        let empty = Object.keys(data).length === 0;
         fetch(`${BASE_URL}/img/${this.state.imgMeta["reddit_id"]}`, requestOptions)
             .then(response => {
-                console.log(response)
                 if (response.status === 201 || response.status === 200) {
-                    this.showToast("Successfully saved 💾💾")
+                    this.showToast(empty ? "Deleted succesfully ✂️" : "Successfully saved 💾💾")
                 }
             })
     }
 
     onSave() {
         let data = []
+        console.log(this)
         this.galleryRefs.forEach(r => {
             let meta = r.state.meta;
             if (meta) {
@@ -293,10 +295,48 @@ class App extends React.Component {
 
     }
 
+    renderKeyDialog() {
+        if (this.state.showDialog) {
+            const keyMap = getApplicationKeyMap();
+
+            return (
+                <div>
+                    <h2>
+                        Keyboard shortcuts
+                    </h2>
+
+                    <table>
+                        <tbody>
+                        {Object.keys(keyMap).reduce((memo, actionName) => {
+                            const {sequences, name} = keyMap[actionName];
+
+                            memo.push(
+                                <tr key={name || actionName}>
+                                    <td>
+                                        {name}
+                                    </td>
+                                    <td>
+                                        {sequences.map(({sequence}) => <span key={sequence}>{sequence}</span>)}
+                                    </td>
+                                </tr>
+                            );
+
+                            return memo;
+                        })
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            );
+        }
+    }
+
     render() {
         return (
 
             <div className="App">
+                <GlobalHotKeys keyMap={this.keyMap} handlers={this.handlers}/>;
+                {this.renderKeyDialog()}
                 <ToastContainer
                     position="top-right"
                     autoClose={5000}
