@@ -1,3 +1,4 @@
 praw.ini
-dump
+#dump
 .mypy_cache
+/dump/dump.sqlite
