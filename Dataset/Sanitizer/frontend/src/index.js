@@ -5,13 +5,15 @@ import Cropper from 'react-cropper';
 
 import 'cropperjs/dist/cropper.css'; // see installation section above for versions of NPM older than 3.0.0
 import CropGallery from "./cropGallery"
-import {Grid, Card, Header, List, Icon, Popup} from 'semantic-ui-react'
+import {Grid, Card, Header, List, Icon, Popup, Button, ButtonContent} from 'semantic-ui-react'
 import {ToastContainer, toast} from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 import {GlobalHotKeys, getApplicationKeyMap} from "react-hotkeys";
+import Dropdown from "semantic-ui-react/dist/commonjs/modules/Dropdown";
+import Message from "semantic-ui-react/dist/commonjs/collections/Message";
 
-const cropper = React.createRef(null);
+// const cropper = React.createRef(null);
 const BASE_URL = "http://127.0.0.1:5000"
 
 class App extends React.Component {
@@ -35,15 +37,15 @@ class App extends React.Component {
 
     keyMap = {
         DELETE: 'q',
-        SUBMIT: 'w',
-        CHANGE_INDEX: 'a',
-        CROP: 's'
+        SUBMIT: 's',
+        NEW_GALLERY: 'z',
+        CHANGE_INDEX: [" ", "SpaceBar", ""]
     };
     handlers = {
+        NEW_GALLERY: e => this.onAddGallery(),
         DELETE: e => this.onSendEmpty(),
         SUBMIT: e => this.onSave(),
         CHANGE_INDEX: e => this.onNextGallery(),
-        CROP: e => this.cropImage()
     };
 
     constructor(props) {
@@ -61,6 +63,7 @@ class App extends React.Component {
         this.setGalleryRefs = element => {
             this.galleryRefs.push(element)
         }
+
     }
 
     postToServer(data,) {
@@ -80,10 +83,9 @@ class App extends React.Component {
 
     onSave() {
         let data = []
-        console.log(this)
         this.galleryRefs.forEach(r => {
             let meta = r.state.meta;
-            if (meta) {
+            if (meta && r.state.imgUrl !== "") {
                 data.push({
                     meta: r.state.meta,
                     data: r.state.data
@@ -92,6 +94,7 @@ class App extends React.Component {
         })
 
         if (data.length !== 0) {
+            console.table(data)
             this.postToServer(data,)
             this.onNext()
         } else {
@@ -134,7 +137,6 @@ class App extends React.Component {
     }
 
     processRequest(data) {
-        console.log("in process request")
         console.table(data)
         let temp = [{weight: data["start_weight"]}, {weight: data["end_weight"]}]
         let {reddit_id} = data
@@ -150,13 +152,14 @@ class App extends React.Component {
             imgMeta: data
         })
 
-        this.cropper.replace(img_url)
+        this.refs.cropper.replace(img_url)
         while (this.galleryRefs.length !== 2) {
             this.galleryRefs.pop()
         }
 
         this.galleryRefs.forEach((gal, idx) => {
-            let canvas = this.cropper.getCroppedCanvas()
+            let canvas = this.refs.cropper.getCroppedCanvas()
+            console.log(canvas)
             gal.setState({
                 imgUrl: canvas === null ? "" : canvas.toDataURL(),
                 data: temp[idx],
@@ -171,7 +174,6 @@ class App extends React.Component {
         fetch(`${BASE_URL}/next`)
             .then(
                 res => {
-                    console.log(res)
                     if (res.status === 400) {
                         return Promise.reject()
                     }
@@ -189,18 +191,18 @@ class App extends React.Component {
 
 
     cropImage() {
-        if (typeof this.cropper.getCroppedCanvas() === 'undefined') {
+        if (typeof this.refs.cropper.getCroppedCanvas() === 'undefined') {
             return;
         }
 
 
         let affectedGallery = this.galleryRefs[this.state.currCrop]
-        let meta = this.cropper.getData()
+        let meta = this.refs.cropper.getData()
         affectedGallery.setState({
-            imgUrl: this.cropper.getCroppedCanvas(meta).toDataURL(),
+            imgUrl: this.refs.cropper.getCroppedCanvas(meta).toDataURL(),
             meta: meta,
         })
-        this.onIndexChange((this.state.currCrop + 1) % this.galleryRefs.length)
+        // this.onIndexChange((this.state.currCrop + 1) % this.galleryRefs.length)
 
     }
 
@@ -217,7 +219,7 @@ class App extends React.Component {
             e.setState({
                 selected: true
             })
-            this.cropper.setData(e.state.meta)
+            this.refs.cropper.setData(e.state.meta)
 
         }
     }
@@ -295,48 +297,12 @@ class App extends React.Component {
 
     }
 
-    renderKeyDialog() {
-        if (this.state.showDialog) {
-            const keyMap = getApplicationKeyMap();
-
-            return (
-                <div>
-                    <h2>
-                        Keyboard shortcuts
-                    </h2>
-
-                    <table>
-                        <tbody>
-                        {Object.keys(keyMap).reduce((memo, actionName) => {
-                            const {sequences, name} = keyMap[actionName];
-
-                            memo.push(
-                                <tr key={name || actionName}>
-                                    <td>
-                                        {name}
-                                    </td>
-                                    <td>
-                                        {sequences.map(({sequence}) => <span key={sequence}>{sequence}</span>)}
-                                    </td>
-                                </tr>
-                            );
-
-                            return memo;
-                        })
-                        }
-                        </tbody>
-                    </table>
-                </div>
-            );
-        }
-    }
-
     render() {
         return (
 
             <div className="App">
-                <GlobalHotKeys keyMap={this.keyMap} handlers={this.handlers}/>;
-                {this.renderKeyDialog()}
+                <GlobalHotKeys keyMap={this.keyMap} handlers={this.handlers}/>
+
                 <ToastContainer
                     position="top-right"
                     autoClose={5000}
@@ -348,45 +314,61 @@ class App extends React.Component {
                     draggable
                     pauseOnHover
                 /> <Header> {this.getCurrentInfo()}</Header>
-                <Grid rows={2} divided>
-                    <Grid.Row width={8}>
+                <Grid column={2} divided>
+                    <Grid.Column width={8}>
 
                         <Cropper
                             style={{height: 400, width: '100%'}}
                             guides={true}
                             src={this.state.imageSrc}
                             viewMode={2}
-                            ref={cropper => {
-                                this.cropper = cropper;
-                            }}
-
+                            ref={'cropper'}
+                            cropend={this.cropImage}
                         />
-                        <div>
-                            <div className="box" style={{width: '50%', float: 'right'}}>
-                                <button onClick={this.cropImage} style={{float: 'right'}}>
-                                    Crop Image
-                                </button>
+                        <Grid.Row columns={3}>
+                            <Grid.Column>
+                                <Button.Group>
+                                    <Button primary animated onClick={this.onSendEmpty} style={{float: 'right'}}>
 
-                                <button onClick={this.onAddGallery} style={{float: 'right'}}>
-                                    NUU GALLERY
-                                </button>
-                                <button onClick={this.onNextGallery} style={{float: 'right'}}>
-                                    next
-                                </button>
+                                        <ButtonContent visible> Delete Image</ButtonContent>
+                                        <ButtonContent hidden> {this.keyMap.DELETE}</ButtonContent>
+                                    </Button>
+                                    <Button animated primary onClick={this.onSave} style={{float: 'right'}}>
+                                        <ButtonContent visible> Post</ButtonContent>
+                                        <ButtonContent hidden> {this.keyMap.SUBMIT}</ButtonContent>
+                                    </Button>
+                                </Button.Group>
+                            </Grid.Column>
+                            <Grid.Column>
+                                <Button.Group>
 
-                                <button onClick={this.onSendEmpty} style={{float: 'right'}}>
-                                    delete image
-                                </button>
+                                    <Button animated onClick={this.onAddGallery} style={{float: 'right'}}>
+                                        <ButtonContent visible> Extra Weight</ButtonContent>
+                                        <ButtonContent hidden> {this.keyMap.NEW_GALLERY}</ButtonContent>
+                                    </Button>
 
 
-                                <button onClick={this.onSave} style={{float: 'right'}}>
-                                    to server
-                                </button>
-                            </div>
-                        </div>
-                        <br style={{clear: 'both'}}/>
-                    </Grid.Row>
-                    <Grid.Row>
+                                    <Button animated onClick={this.onNextGallery}
+                                            style={{float: 'right'}}>
+                                        <ButtonContent visible> Next</ButtonContent>
+                                        <ButtonContent hidden> {this.keyMap.CHANGE_INDEX}</ButtonContent>
+                                    </Button>
+                                    <Dropdown text='Guidelines' icon='question circle outline' floating labeled button
+                                              className='icon'>
+                                        <Dropdown.Menu>
+                                            <Message
+                                                icon='inbox'
+                                                header='Guidelines'
+                                                content="Face must be present, no image > bad images"
+                                            />
+                                        </Dropdown.Menu>
+                                    </Dropdown>
+                                </Button.Group>
+                            </Grid.Column>
+
+                        </Grid.Row>
+                    </Grid.Column>
+                    <Grid.Column>
                         <Card.Group>
                             {this.state.data.map((data, idx) =>
                                 <CropGallery indexChangeCallback={this.onIndexChange}
@@ -398,7 +380,7 @@ class App extends React.Component {
                             )}
                         </Card.Group>
 
-                    </Grid.Row>
+                    </Grid.Column>
 
                 </Grid>
 

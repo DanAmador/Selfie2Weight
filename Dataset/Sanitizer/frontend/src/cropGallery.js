@@ -37,7 +37,7 @@ class CropGallery extends React.Component {
         return (
 
             <Card onClick={e => this.props.indexChangeCallback(this.state.index)} color={this.setColor()}
-                  style={{minWidth: 100}}>
+                  style={{minWidth: 300}}>
                 <Card.Content as="button">
                     <Card.Meta><span>Index: {this.state.index}</span></Card.Meta>
 
