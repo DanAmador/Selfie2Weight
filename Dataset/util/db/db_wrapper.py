@@ -9,7 +9,7 @@ from sqlalchemy import create_engine, and_
 
 from Dataset.util.db.base_class import Base
 from Dataset.util.db.model import RawEntry
-from  sqlalchemy.sql.expression import func, select
+from sqlalchemy.sql.expression import func, select
 
 p = Path().cwd().parent / "Scrapper" / 'dump'
 

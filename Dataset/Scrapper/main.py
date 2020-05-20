@@ -7,7 +7,7 @@ import Dataset.util.db.db_wrapper as db
 from Dataset.Scrapper.Subreddits import ProgressPics, Brogress
 from Dataset.util.dataset_logger import dataset_logger as logger
 from Dataset.util.db.model import RawEntry
-from Dataset.util.image_util import save_image, has_faces, check_duplicates, download_raw_images
+from Dataset.util.image_util import has_faces, check_duplicates, download_raw_images
 
 p = Path.cwd() / 'dump'
 db_wrapper = db.DBWrapper()
@@ -15,7 +15,7 @@ db_wrapper = db.DBWrapper()
 pimg = (p / 'img')
 p.mkdir(parents=True, exist_ok=True)
 pimg.mkdir(parents=True, exist_ok=True)
-subreddits = [Brogress(), ProgressPics()]
+subreddits = [ProgressPics(), Brogress()]
 stats = {}
 
 
@@ -75,7 +75,7 @@ if __name__ == '__main__':
     start_time = datetime.now()
 
     logger.info("Starting")
-    extract_features_from_api()
+    # extract_features_from_api()
     if args.images:
         with db_wrapper.session_scope() as session:
             download_raw_images(session)

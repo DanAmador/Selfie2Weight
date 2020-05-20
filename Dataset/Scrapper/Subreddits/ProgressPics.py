@@ -23,7 +23,8 @@ class ProgressPics(AbstractSubreddit):
             weights, bracket_status = self.get_bracket_weights(bracket_string)
             # , "age sex height start_weight end_weight id")
             if bracket_status and post.url.endswith(".jpg") and height_parse_status:
-                return RawEntry(sex=match[2], age=int(match[3]), height=height, start_weight=max(weights),
+                return RawEntry(title=post.title, sex=match[2], age=int(match[3]), height=height,
+                                start_weight=max(weights),
                                 end_weight=min(weights), reddit_id=post.id, img_url=post.url)
 
             return None

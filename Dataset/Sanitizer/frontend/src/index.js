@@ -5,13 +5,11 @@ import Cropper from 'react-cropper';
 
 import 'cropperjs/dist/cropper.css'; // see installation section above for versions of NPM older than 3.0.0
 import CropGallery from "./cropGallery"
-import {Grid, Card, Header, List, Icon, Popup, Button, ButtonContent} from 'semantic-ui-react'
-import {ToastContainer, toast} from 'react-toastify';
+import {Button, ButtonContent, Card, Dropdown, Grid, Header, Icon, Label, List, Message, Popup} from 'semantic-ui-react'
+import {toast, ToastContainer} from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-import {GlobalHotKeys, getApplicationKeyMap} from "react-hotkeys";
-import Dropdown from "semantic-ui-react/dist/commonjs/modules/Dropdown";
-import Message from "semantic-ui-react/dist/commonjs/collections/Message";
+import {GlobalHotKeys} from "react-hotkeys";
 
 // const cropper = React.createRef(null);
 const BASE_URL = "http://127.0.0.1:5000"
@@ -66,19 +64,25 @@ class App extends React.Component {
 
     }
 
-    postToServer(data,) {
+    postToServer(data, showToast = true) {
         const requestOptions = {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify(data)
         };
         let empty = Object.keys(data).length === 0;
-        fetch(`${BASE_URL}/img/${this.state.imgMeta["reddit_id"]}`, requestOptions)
-            .then(response => {
-                if (response.status === 201 || response.status === 200) {
-                    this.showToast(empty ? "Deleted succesfully ✂️" : "Successfully saved 💾💾")
-                }
-            })
+        try {
+            fetch(`${BASE_URL}/img/${this.state.imgMeta["reddit_id"]}`, requestOptions)
+                .then(response => {
+                    if (response.status === 201 || response.status === 200) {
+                        if (showToast)
+                            this.showToast(empty ? "Deleted succesfully ✂️" : "Successfully saved 💾💾")
+                    }
+                })
+        } catch (error) {
+            console.log(error)
+        }
+
     }
 
     onSave() {
@@ -94,7 +98,7 @@ class App extends React.Component {
         })
 
         if (data.length !== 0) {
-            console.table(data)
+            // console.table(data)
             this.postToServer(data,)
             this.onNext()
         } else {
@@ -103,8 +107,8 @@ class App extends React.Component {
     }
 
     //Mark as "sanitized" to ignore or 'delete' image
-    onSendEmpty() {
-        this.postToServer({});
+    onSendEmpty(showToast = true) {
+        this.postToServer({}, showToast);
         this.onNext();
     }
 
@@ -136,8 +140,10 @@ class App extends React.Component {
 
     }
 
-    processRequest(data) {
-        console.table(data)
+
+    async processRequest(data) {
+        // console.table(data)
+
         let temp = [{weight: data["start_weight"]}, {weight: data["end_weight"]}]
         let {reddit_id} = data
 
@@ -153,13 +159,14 @@ class App extends React.Component {
         })
 
         this.refs.cropper.replace(img_url)
+
+
         while (this.galleryRefs.length !== 2) {
             this.galleryRefs.pop()
         }
 
         this.galleryRefs.forEach((gal, idx) => {
             let canvas = this.refs.cropper.getCroppedCanvas()
-            console.log(canvas)
             gal.setState({
                 imgUrl: canvas === null ? "" : canvas.toDataURL(),
                 data: temp[idx],
@@ -167,6 +174,7 @@ class App extends React.Component {
             })
         })
 
+        return true
 
     }
 
@@ -182,11 +190,15 @@ class App extends React.Component {
                     }
                     return res.json();
                 })
-            .then(data => this.processRequest(data))
+            .then(data => {
+                return this.processRequest(data)
+            })
             .catch(error => {
                 this.showToast("Deleted image, loading next");
-
+                return false
             });
+
+
     }
 
 
@@ -230,9 +242,7 @@ class App extends React.Component {
         if (this.galleryRefs && index <= length && length > 2) {
             let newData = this.state.data;
 
-            console.table(newData)
             newData.splice(index, 1)
-            console.table(newData)
 
             let newIdx = (index + 1) % this.galleryRefs.length;
             // this.galleryRefs = this.galleryRefs.filter(e => e !== null && e !== gallery).map((e, idx) => {
@@ -242,7 +252,6 @@ class App extends React.Component {
             //     })
             //     return e;
             // })
-            console.table(this.galleryRefs)
 
             if (this.state.currCrop === index) {
                 this.setState({data: newData, currCrop: newIdx})
@@ -254,16 +263,18 @@ class App extends React.Component {
 
     }
 
+
     getCurrentInfo() {
         if (this.state.data.length !== 0) {
-            let {age, sex, height, reddit_id} = this.state.imgMeta;
+            let {age, sex, height, reddit_id, title} = this.state.imgMeta;
             let data = {
+                title: title,
                 age: age,
                 sex: sex,
                 height: height,
                 id: reddit_id,
                 index: this.state.currCrop,
-                weight: this.state.data[this.state.currCrop]["weight"]
+                weight: this.state.data[this.state.currCrop]["weight"],
             };
             let icons = {
                 age: "calendar alternate outline",
@@ -271,7 +282,8 @@ class App extends React.Component {
                 height: "text height",
                 id: "reddit alien",
                 index: "magic",
-                weight: "frown outline"
+                weight: "frown outline",
+                title: "book"
             }
 
             let items = Object.entries(data).map((entry, idx) => {
@@ -284,13 +296,14 @@ class App extends React.Component {
                                   <List.Content>
 
                                       <List.Description>
-                                          {v}
+                                          {k === "title" ? <Label> {v}</Label> : v}
                                       </List.Description>
                                   </List.Content>
                               </List.Item>}/>
 
 
             });
+
             return <List horizontal key={"list_gallery"}>{items}</List>
         }
         return ""
@@ -359,7 +372,7 @@ class App extends React.Component {
                                             <Message
                                                 icon='inbox'
                                                 header='Guidelines'
-                                                content="Face must be present, no image > bad images"
+                                                content="Face must be present, no photo > shitty photo"
                                             />
                                         </Dropdown.Menu>
                                     </Dropdown>
@@ -387,6 +400,8 @@ class App extends React.Component {
             </div>
         )
     }
+
+
 }
 
 const

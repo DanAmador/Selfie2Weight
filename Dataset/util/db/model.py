@@ -8,6 +8,7 @@ from Dataset.util.db.base_class import Base
 
 class RawEntry(Base):
     __tablename__ = 'raw_entry'
+    title = Column(String, nullable=False)
     sex = Column(String, nullable=False)
     age = Column(Integer, nullable=False)
     height = Column(Float, nullable=False)
@@ -31,4 +32,3 @@ class SanitizedEntry(Base):
     y = Column(Float, nullable=False)
     reddit_id = Column(String, ForeignKey('raw_entry.reddit_id'), nullable=False)
     parent = relationship("RawEntry", back_populates="sanitized_entries")
-

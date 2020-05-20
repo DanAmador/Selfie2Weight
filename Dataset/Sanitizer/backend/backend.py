@@ -31,6 +31,7 @@ def next_unsanitized():
             return res.as_dict
         else:
             logger.error("Could not find next unsanitized")
+            return {}
 
 
 def mark_as_empty(image_id, session):
