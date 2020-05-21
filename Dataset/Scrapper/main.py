@@ -15,7 +15,7 @@ db_wrapper = db.DBWrapper()
 pimg = (p / 'img')
 p.mkdir(parents=True, exist_ok=True)
 pimg.mkdir(parents=True, exist_ok=True)
-subreddits = [ProgressPics(), Brogress()]
+subreddits = []
 stats = {}
 
 
@@ -37,11 +37,10 @@ def delete_files(to_delete_list, session):
 
 
 def extract_features_from_api():
-    with db_wrapper.session_scope() as session:
-        for idx, subreddit in enumerate(subreddits):
-            stats[subreddit.name] = {'correct': 0, 'error': 0}
-            for idx2, (entry, post) in enumerate(subreddit.process()):
-
+    for idx, subreddit in enumerate(subreddits):
+        stats[subreddit.name] = {'correct': 0, 'error': 0}
+        for idx2, (entry, post) in enumerate(subreddit.process()):
+            with db_wrapper.session_scope() as session:
                 if entry and db_wrapper.save_object(entry, session=session):
                     stats[subreddit.name]['correct'] = stats[subreddit.name]['correct'] + 1
                 else:
@@ -68,19 +67,27 @@ def get_pictures_without_faces():
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("--clean", help="Delete duplicates/pictures without faces", type=bool, default=True)
+    parser.add_argument("--meta", help="Download metadata from subreddits", type=bool, default=True)
     parser.add_argument("--images", help="Download images", type=bool, default=True)
+    parser.add_argument("--clean", help="Delete duplicates/pictures without faces", type=bool, default=True)
     args = parser.parse_args()
 
     start_time = datetime.now()
 
     logger.info("Starting")
-    # extract_features_from_api()
+    if args.meta:
+        logger.info("Running metadata download")
+        subreddits = [ProgressPics(), Brogress()]
+
+        extract_features_from_api()
     if args.images:
-        with db_wrapper.session_scope() as session:
-            download_raw_images(session)
+        logger.info("Downloading raw images from metadata")
+
+        download_raw_images()
 
     if args.clean:
+        logger.info("Running duplicate and face check")
+
         duplicates = check_duplicates()
         with db_wrapper.session_scope() as session:
             delete_files(duplicates, session)

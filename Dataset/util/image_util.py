@@ -1,15 +1,13 @@
 import hashlib
-import urllib
-from pathlib import Path
-import logging
-from typing import List
-
-import cv2
 import os
-
-from .db.model import RawEntry
-from .dataset_logger import dataset_logger as logger
+from pathlib import Path
+from typing import List
+from multiprocessing.pool import ThreadPool
+import cv2
+import requests
 import Dataset.util.db.db_wrapper as db
+from Dataset.util.dataset_logger import dataset_logger as logger
+from Dataset.util.db.model import RawEntry
 
 db_wrapper = db.DBWrapper()
 
@@ -19,22 +17,19 @@ pimg = (p / 'img')
 
 
 def save_image(raw_entry: RawEntry):
-    try:
-        if raw_entry.img_url.endswith(".jpg"):
-            response = urllib.request.urlopen(raw_entry.img_url)
-            img = response.read()
-
+    # try:
+    if raw_entry.img_url.endswith(".jpg"):
+        r = requests.get(raw_entry.img_url, stream=True)
+        if r.status_code == 200:
             name = str(raw_entry.reddit_id) + '.jpg'
             pimg = Path.cwd() / 'dump' / 'img'
             if not pimg.is_dir():
                 pimg.mkdir(parents=True, exist_ok=True)
             with open(pimg / name, 'wb') as f:
-                f.write(img)
-                return True, pimg / name
-        return False, None
-    except Exception as e:
-        # logging.getLogger('crawler').error(e)
-        return False, None
+                for chunk in r:
+                    f.write(chunk)
+            return True, pimg / name
+    return False, None
 
 
 def check_duplicates() -> List[str]:
@@ -72,14 +67,28 @@ def has_faces(img_path) -> bool:
 
 
 # Go through table and delete images and delete entries without a valid image
-def download_raw_images(session, download_all=False):
-    query = session.query(RawEntry).all() if download_all else db_wrapper.get_by(RawEntry, "local_path", None,
-                                                                                 session=session, only_first=False)
-    for entry in query:
-        succ, path = save_image(entry)
-        if succ:
-            entry.local_path = str(path)
-            db_wrapper.save_object(entry, session)
-        else:
-            session.delete(entry)
-            session.commit()
+def download_raw_images(download_all=False):
+    query = {}
+    logger.info("Downloading Images")
+    with db_wrapper.session_scope() as session:
+        session.expire_on_commit = False
+        query = session.query(RawEntry).all() if download_all else db_wrapper.get_by(RawEntry, "local_path", None,
+                                                                                     session=session, only_first=False)
+
+    logger.info(f"Starting download from {len(query)} images")
+    urls = []
+    for idx, entry in enumerate(query):
+        urls.append(entry)
+        if len(urls) >= 10 or idx - 1 == len(query):
+            results = ThreadPool(8).imap_unordered(save_image, urls)
+            urls = []
+            with db_wrapper.session_scope() as session:
+                for success, path in results:
+                    if success:
+                        entry.local_path = str(path)
+                        db_wrapper.save_object(entry, session)
+                    else:
+                        session.delete(entry)
+                        session.commit()
+
+
