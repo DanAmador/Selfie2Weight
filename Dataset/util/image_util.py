@@ -77,18 +77,26 @@ def download_raw_images(download_all=False):
 
     logger.info(f"Starting download from {len(query)} images")
     urls = []
+    total_errors = 0
+    size = len(query)
+    current = 0
     for idx, entry in enumerate(query):
         urls.append(entry)
-        if len(urls) >= 10 or idx - 1 == len(query):
+        if len(urls) >= 100 or idx - 1 == size:
+            logger.info(f'Downloading images {current} to {idx} from {size}')
+            current = idx
             results = ThreadPool(8).imap_unordered(save_image, urls)
-            urls = []
             with db_wrapper.session_scope() as session:
+                errors = 0
                 for success, path in results:
                     if success:
                         entry.local_path = str(path)
                         db_wrapper.save_object(entry, session)
                     else:
+                        errors +=1
                         session.delete(entry)
-                        session.commit()
-
-
+                logger.info(f'{errors} errors in the last batch {errors / len(urls)}')
+                urls = []
+                total_errors += errors
+                session.commit()
+    logger.info(f'{errors} errors from {size} images ({errors / size})')

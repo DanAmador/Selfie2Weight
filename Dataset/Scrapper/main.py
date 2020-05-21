@@ -75,31 +75,29 @@ if __name__ == '__main__':
     start_time = datetime.now()
 
     logger.info("Starting")
-    if args.meta:
-        logger.info("Running metadata download")
-        subreddits = [ProgressPics(), Brogress()]
-
-        extract_features_from_api()
+    # if args.meta:
+    #     logger.info("Running metadata download")
+    #     subreddits = [ProgressPics(), Brogress()]
+    #
+    #     extract_features_from_api()
     if args.images:
         logger.info("Downloading raw images from metadata")
-
         download_raw_images()
 
     if args.clean:
         logger.info("Running duplicate and face check")
-
+        logger.info("Checking for duplicates")
         duplicates = check_duplicates()
+        logger.info(f'Found {len(duplicates)} duplicates')
+        logger.info("Face check")
+        no_faces = get_pictures_without_faces()
+        logger.info(f'Found {len(no_faces)} with no faces')
+
         with db_wrapper.session_scope() as session:
             delete_files(duplicates, session)
 
-            no_faces = get_pictures_without_faces()
             delete_files(no_faces, session)
-    logger.info(f'Found {len(no_faces)} with no faces')
+        logger.info(stats)
 
-    logger.info(stats)
-
-    logger.info("Checking for duplicates")
-
-    logger.info(stats)
     end_time = datetime.now() - start_time
     logger.info(f"Took {end_time} to complete")
