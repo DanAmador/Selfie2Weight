@@ -1,6 +1,7 @@
 import argparse
 import os
 from datetime import datetime
+from multiprocessing.pool import ThreadPool
 from pathlib import Path
 
 import Dataset.util.db.db_wrapper as db
@@ -19,21 +20,21 @@ subreddits = []
 stats = {}
 
 
-def delete_files(to_delete_list, session):
+def delete_files(to_delete_list):
     counter = 0
     errors = 0
     for d in to_delete_list:
         try:
-            session.query(RawEntry).filter(RawEntry.local_path == str(pimg / d)).delete()
-            os.remove(pimg / d)
-            session.commit()
-            counter += 1
+            with db_wrapper.session_scope() as session:
+                session.query(RawEntry).filter(RawEntry.local_path == str(pimg / d)).delete()
+                os.remove(pimg / d)
+                session.commit()
+                counter += 1
         except Exception:
             errors += 1
             continue
 
-    logger.info(f"Deleted {len(to_delete_list) - errors} entries")
-    logger.error(f"Unsuccesfully deleted {errors} entries")
+    return errors
 
 
 def extract_features_from_api():
@@ -75,11 +76,11 @@ if __name__ == '__main__':
     start_time = datetime.now()
 
     logger.info("Starting")
-    # if args.meta:
-    #     logger.info("Running metadata download")
-    #     subreddits = [ProgressPics(), Brogress()]
-    #
-    #     extract_features_from_api()
+    if args.meta:
+        logger.info("Running metadata download")
+        subreddits = [ProgressPics(), Brogress()]
+
+        extract_features_from_api()
     if args.images:
         logger.info("Downloading raw images from metadata")
         download_raw_images()
@@ -93,10 +94,15 @@ if __name__ == '__main__':
         no_faces = get_pictures_without_faces()
         logger.info(f'Found {len(no_faces)} with no faces')
 
-        with db_wrapper.session_scope() as session:
-            delete_files(duplicates, session)
+        e = sum([unsucc for unsucc in ThreadPool(8).imap_unordered(delete_files, duplicates)])
+        logger.info(f"Deleted {len(duplicates) - e} entries in duplicates")
+        logger.error(f"Unsuccesfully deleted {e} entries in duplicates")
 
-            delete_files(no_faces, session)
+        e = sum([unsucc for unsucc in ThreadPool(8).imap_unordered(delete_files, no_faces)])
+
+        logger.info(f"Deleted {len(no_faces) - e} entries in no face")
+        logger.error(f"Unsuccesfully deleted {e} entries in duplicates")
+
         logger.info(stats)
 
     end_time = datetime.now() - start_time
