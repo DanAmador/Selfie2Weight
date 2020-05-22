@@ -6,15 +6,14 @@ from multiprocessing.pool import ThreadPool
 import cv2
 import requests
 import Dataset.util.db.db_wrapper as db
+from Dataset import util
 from Dataset.util.dataset_logger import dataset_logger as logger
 from Dataset.util.db.model import RawEntry
 
 db_wrapper = db.DBWrapper()
 
-faceCascade = cv2.CascadeClassifier("haarcascade_frontalface_default.xml")
-sideFaceCascade = cv2.CascadeClassifier("haarcascade_profileface.xml")
-cascades = [faceCascade, sideFaceCascade]
 p = Path.cwd() / 'dump'
+cascades_classifiers = [cv2.CascadeClassifier(str(e)) for e in p.parent.parent.rglob("cascades/*.xml")]
 pimg = (p / 'img')
 
 
@@ -42,7 +41,7 @@ def get_pictures_without_faces():
             try:
                 if index % 200 == 0:
                     logger.info(f"{index}  analyzed and {len(no_faces_list)} have no faces so far ")
-                if has_faces(fpath):
+                if does_not_have_faces(fpath):
                     no_faces_list.append(fpath)
             except Exception as e:
                 logger.error(e)
@@ -74,10 +73,10 @@ def check_duplicates() -> List[str]:
     return duplicates
 
 
-def has_faces(img_path) -> bool:
+def does_not_have_faces(img_path) -> bool:
     total_detected = 0
     image = cv2.imread(img_path.as_posix(), 0)
-    for cascade in cascades:
+    for cascade in cascades_classifiers:
         faces = cascade.detectMultiScale(
             image,
             scaleFactor=1.1,
@@ -85,7 +84,7 @@ def has_faces(img_path) -> bool:
             minSize=(30, 30)
         )
         total_detected += len(faces)
-    return total_detected != 0
+    return total_detected == 0
 
 
 # Go through table and delete images and delete entries without a valid image
