@@ -32,6 +32,22 @@ def save_image(raw_entry: RawEntry):
     return False, None
 
 
+def get_pictures_without_faces():
+    logger.info("Checking faces")
+    no_faces_list = []
+    for index, fpath in enumerate(pimg.glob("**/*.jpg")):
+        if fpath.is_file():
+            try:
+                if index % 200 == 0:
+                    logger.info(f"{index}  analyzed and {len(no_faces_list)} have no faces so far ")
+                if not has_faces(fpath):
+                    no_faces_list.append(fpath)
+            except Exception as e:
+                logger.error(e)
+                no_faces_list.append(fpath)
+    return no_faces_list
+
+
 def check_duplicates() -> List[str]:
     hash_keys = {}
     duplicates = []
@@ -40,7 +56,8 @@ def check_duplicates() -> List[str]:
             try:
                 with open(pimg / filename, 'rb') as f:
                     if index % 1000 == 0:
-                        print(index)
+                        logger.info(f"{index}  analyzed and {len(duplicates)} are duplicates ")
+
                     filehash = hashlib.md5(f.read()).hexdigest()
 
                     if filehash not in hash_keys:
@@ -94,7 +111,7 @@ def download_raw_images(download_all=False):
                             entry.local_path = str(path)
                             db_wrapper.save_object(entry, session)
                         else:
-                            errors +=1
+                            errors += 1
                             session.delete(entry)
                     total_errors += errors
                     session.commit()
