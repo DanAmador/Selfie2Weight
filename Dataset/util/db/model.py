@@ -28,5 +28,10 @@ class SanitizedEntry(Base):
     width = Column(Float, nullable=False)
     x = Column(Float, nullable=False)
     y = Column(Float, nullable=False)
+
+    frontalface_default = Column(Boolean, default=False, nullable=False)
+    profileface = Column(Boolean, default=False, nullable=False)
+    upperbody = Column(Boolean, default=False, nullable=False)
+
     reddit_id = Column(String, ForeignKey('raw_entry.reddit_id'), nullable=False)
     parent = relationship("RawEntry", back_populates="sanitized_entries")
