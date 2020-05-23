@@ -64,14 +64,18 @@ def extract_features_from_api():
     for idx, subreddit in enumerate(subreddits):
         stats[subreddit.name] = {'correct': 0, 'error': 0}
         for idx2, (entry, post) in enumerate(subreddit.process()):
-            with db_wrapper.session_scope() as session:
-                if entry and db_wrapper.save_object(entry, session=session):
-                    stats[subreddit.name]['correct'] = stats[subreddit.name]['correct'] + 1
-                else:
-                    stats[subreddit.name]['error'] = stats[subreddit.name]['error'] + 1
-                if idx2 % 500 == 0 and idx2 != 0:
-                    logger.debug(f"{idx2} extracted from {subreddit.name}")
-
+            try:
+                with db_wrapper.session_scope() as session:
+                    if entry and db_wrapper.save_object(entry, session=session):
+                        stats[subreddit.name]['correct'] = stats[subreddit.name]['correct'] + 1
+                        session.commit()
+                    else:
+                        stats[subreddit.name]['error'] = stats[subreddit.name]['error'] + 1
+                    if idx2 % 500 == 0 and idx2 != 0:
+                        logger.debug(f"{idx2} extracted from {subreddit.name}")
+            except Exception as e:
+                logger.error(e)
+                stats[subreddit.name]['error'] = stats[subreddit.name]['error'] + 1
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
