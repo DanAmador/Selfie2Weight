@@ -1,6 +1,6 @@
 import hashlib
 import os
-from multiprocessing.pool import ThreadPool
+from multiprocessing.pool import ThreadPool, Pool
 from pathlib import Path
 from typing import List, Dict, Tuple
 
@@ -37,28 +37,48 @@ def save_image(raw_entry: RawEntry):
     return False, None
 
 
+def does_not_have_faces(img_path) -> Dict[str, bool]:
+    face_meta = {"path": img_path}
+    if img_path.is_file():
+        total_detected = 0
+        image = cv2.imread(img_path.as_posix(), 0)
+        for name, cascade in cascades_classifiers.items():
+            faces = cascade.detectMultiScale(
+                image,
+                scaleFactor=1.1,
+                minNeighbors=5,
+                minSize=(30, 30)
+            )
+            if len(faces) > 0:
+                face_meta[name] = True
+            total_detected += len(faces)
+        del image
+    return face_meta
+
+
 def get_pictures_without_faces() -> Tuple[List[str], List[Dict]]:
     logger.info("Checking faces")
     no_faces_list = []
     feature_list = []
-    for index, fpath in enumerate(pimg.glob("**/*.jpg")):
+    index = 0
+    results = Pool().imap_unordered(does_not_have_faces, pimg.glob("**/*.jpg"))
+    for meta in results:
+        index += 1
+        fpath = meta.pop("path")
         no_face = True
-
-        if fpath.is_file():
-            try:
-                if index % 200 == 10:
-                    logger.info(f"{index}  analyzed and {len(no_faces_list)} have no faces so far ")
-                meta = does_not_have_faces(fpath)
-                if "frontalface_default" in meta.keys() or "profileface" in meta.keys():
-                    no_face = False
-                meta["reddit_id"] = fpath.name.split(".")[0]
-                if no_face:
-                    no_faces_list.append(fpath)
-                else:
-                    feature_list.append(meta)
-            except Exception as e:
-                logger.error(e)
+        try:
+            if index % 200 == 10:
+                logger.info(f"{index}  analyzed and {len(no_faces_list)} have no faces so far ")
+            if "frontalface_default" in meta.keys() or "profileface" in meta.keys():
+                no_face = False
+            meta["reddit_id"] = fpath.name.split(".")[0]
+            if no_face:
                 no_faces_list.append(fpath)
+            else:
+                feature_list.append(meta)
+        except Exception as e:
+            logger.error(e)
+            no_faces_list.append(fpath)
     return no_faces_list, feature_list
 
 
@@ -84,23 +104,6 @@ def check_duplicates() -> List[str]:
     logger.info(f'Found {len(duplicates)} duplicates')
 
     return duplicates
-
-
-def does_not_have_faces(img_path) -> Dict[str, bool]:
-    total_detected = 0
-    image = cv2.imread(img_path.as_posix(), 0)
-    face_meta = {}
-    for name, cascade in cascades_classifiers.items():
-        faces = cascade.detectMultiScale(
-            image,
-            scaleFactor=1.1,
-            minNeighbors=5,
-            minSize=(30, 30)
-        )
-        if len(faces) > 0:
-            face_meta[name] = True
-        total_detected += len(faces)
-    return face_meta
 
 
 # Go through table and delete images and delete entries without a valid image
