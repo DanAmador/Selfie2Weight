@@ -17,6 +17,9 @@ class RawEntry(Base):
     local_path = Column(String)
     has_been_sanitized = Column(Boolean, default=False, nullable=False)
     sanitized_entries = relationship("SanitizedEntry")
+    frontalface_default = Column(Boolean, default=False, nullable=False)
+    profileface = Column(Boolean, default=False, nullable=False)
+    upperbody = Column(Boolean, default=False, nullable=False)
 
 
 class SanitizedEntry(Base):
@@ -29,9 +32,6 @@ class SanitizedEntry(Base):
     x = Column(Float, nullable=False)
     y = Column(Float, nullable=False)
 
-    frontalface_default = Column(Boolean, default=False, nullable=False)
-    profileface = Column(Boolean, default=False, nullable=False)
-    upperbody = Column(Boolean, default=False, nullable=False)
 
     reddit_id = Column(String, ForeignKey('raw_entry.reddit_id'), nullable=False)
     parent = relationship("RawEntry", back_populates="sanitized_entries")

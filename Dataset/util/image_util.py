@@ -46,8 +46,6 @@ def get_pictures_without_faces() -> Tuple[List[str], List[Dict]]:
             try:
                 if index % 200 == 10:
                     logger.info(f"{index}  analyzed and {len(no_faces_list)} have no faces so far ")
-                    return no_faces_list, feature_list
-
                 meta = does_not_have_faces(fpath)
                 meta["reddit_id"] = fpath.name.split(".")[0]
                 if len(meta.values()) == 0:
@@ -120,8 +118,9 @@ def download_raw_images(download_all=False):
         if len(urls) >= 300 or idx - 1 == size:
             logger.info(f'Downloading images {current} to {idx} from {size}')
             current = idx
-            results = ThreadPool(8).imap_unordered(save_image, urls)
             try:
+                results = ThreadPool(8).imap_unordered(save_image, urls)
+
                 with db_wrapper.session_scope() as session:
                     errors = 0
                     for success, path in results:
