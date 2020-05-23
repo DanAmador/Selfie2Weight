@@ -42,13 +42,17 @@ def get_pictures_without_faces() -> Tuple[List[str], List[Dict]]:
     no_faces_list = []
     feature_list = []
     for index, fpath in enumerate(pimg.glob("**/*.jpg")):
+        no_face = True
+
         if fpath.is_file():
             try:
                 if index % 200 == 10:
                     logger.info(f"{index}  analyzed and {len(no_faces_list)} have no faces so far ")
                 meta = does_not_have_faces(fpath)
+                if "frontalface_default" in meta.keys() or "profileface" in meta.keys():
+                    no_face = False
                 meta["reddit_id"] = fpath.name.split(".")[0]
-                if len(meta.values()) == 0:
+                if no_face:
                     no_faces_list.append(fpath)
                 else:
                     feature_list.append(meta)
