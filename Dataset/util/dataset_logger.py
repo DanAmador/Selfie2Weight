@@ -1,5 +1,7 @@
-import logging
 
+from loguru import logger
+
+data
 logging.basicConfig(level=logging.DEBUG)
 logging.getLogger("urllib3").setLevel(logging.WARNING)
 logging.getLogger("psaw").setLevel(logging.WARNING)

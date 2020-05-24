@@ -4,7 +4,7 @@ from datetime import datetime
 from multiprocessing.pool import ThreadPool
 from pathlib import Path
 
-from  Dataset.util.db.Wrappers.ElasticWrapper import ElasticWrapper
+from Dataset.util.db.Wrappers.ElasticWrapper import ElasticWrapper
 from Dataset.Scrapper.Subreddits import Brogress, ProgressPics
 from Dataset.util.dataset_logger import dataset_logger as logger
 from Dataset.util.db.model import RawEntry
