@@ -8,11 +8,11 @@ import cv2
 import requests
 from collections import namedtuple
 
-import Dataset.util.db.db_wrapper as db
+import Dataset.util.db.SQLWrapper as db
 from Dataset.util.dataset_logger import dataset_logger as logger
 from Dataset.util.db.model import RawEntry
 
-db_wrapper = db.DBWrapper()
+db_wrapper = db.SQLWrapper()
 
 FaceMeta = namedtuple("FaceMeta", "frontalface profileface upperbody")
 p = Path.cwd() / 'dump'

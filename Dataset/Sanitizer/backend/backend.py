@@ -5,7 +5,7 @@ from flask import Flask
 from flask import send_file, request, Response
 from flask_cors import CORS
 
-from Dataset.util.db.db_wrapper import DBWrapper
+from Dataset.util.db.SQLWrapper import SQLWrapper
 from Dataset.util.db.model import RawEntry, SanitizedEntry
 from Dataset.util.dataset_logger import dataset_logger as logger
 
@@ -62,7 +62,7 @@ def save(image_id):
 
 
 if __name__ == '__main__':
-    db = DBWrapper(Path().cwd().parent.parent / "Scrapper" / 'dump')
+    db = SQLWrapper(Path().cwd().parent.parent / "Scrapper" / 'dump')
 
     # db.update(a)
     app.run()

@@ -1,12 +1,12 @@
 from pathlib import Path
-import Dataset.util.db.db_wrapper as db
+import Dataset.util.db.SQLWrapper as db
 from Dataset.util.db.model import SanitizedEntry, RawEntry
 
 from PIL import Image
 
 p = Path.cwd() / 'dump'
 sanimg = p / "sanitized"
-db_wrapper = db.DBWrapper()
+db_wrapper = db.SQLWrapper()
 
 
 def crop_image(img: Image, meta: SanitizedEntry, session):

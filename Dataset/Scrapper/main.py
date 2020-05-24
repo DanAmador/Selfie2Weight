@@ -4,14 +4,14 @@ from datetime import datetime
 from multiprocessing.pool import ThreadPool
 from pathlib import Path
 
-import Dataset.util.db.db_wrapper as db
+from  Dataset.util.db.Wrappers.ElasticWrapper import ElasticWrapper
 from Dataset.Scrapper.Subreddits import Brogress, ProgressPics
 from Dataset.util.dataset_logger import dataset_logger as logger
 from Dataset.util.db.model import RawEntry
 from Dataset.util.image_util import check_duplicates, download_raw_images, get_pictures_without_faces
 
 p = Path.cwd() / 'dump'
-db_wrapper = db.DBWrapper()
+db_wrapper = ElasticWrapper()
 
 pimg = (p / 'img')
 p.mkdir(parents=True, exist_ok=True)
@@ -87,22 +87,22 @@ if __name__ == '__main__':
     start_time = datetime.now()
 
     logger.info("Starting")
-    # if args.meta:
-    #     logger.info("Running metadata download")
-    #     subreddits = [ProgressPics(), Brogress()]
-    #     extract_features_from_api()
-    # if args.images:
-    #     logger.info("Downloading raw images from metadata")
-    #     download_raw_images()
+    if args.meta:
+        logger.info("Running metadata download")
+        subreddits = [ProgressPics(), Brogress()]
+        extract_features_from_api()
+    if args.images:
+        logger.info("Downloading raw images from metadata")
+        download_raw_images()
 
     if args.clean:
         logger.info("Running duplicate and face check")
         logger.info("Checking for duplicates")
-        # duplicates = check_duplicates()
-        # logger.info(f'Found {len(duplicates)} duplicates')
-        # e = sum([delete_files(d) for d in duplicates])
-        # logger.info(f"Deleted {len(duplicates) - e} entries in duplicates")
-        # logger.error(f"Unsuccesfully deleted {e} entries in duplicates")
+        duplicates = check_duplicates()
+        logger.info(f'Found {len(duplicates)} duplicates')
+        e = sum([delete_files(d) for d in duplicates])
+        logger.info(f"Deleted {len(duplicates) - e} entries in duplicates")
+        logger.error(f"Unsuccesfully deleted {e} entries in duplicates")
 
         logger.info("Face check")
         no_faces, feature_metadata = get_pictures_without_faces()
