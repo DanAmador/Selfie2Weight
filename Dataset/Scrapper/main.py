@@ -28,10 +28,11 @@ def update_sanitized(feature_metadata):
         reddit_id = metadata.pop("reddit_id")
 
         try:
-            with db_wrapper.session_scope() as session:
+            with db_wrapper.session_scope():
                 if metadata:
-                    session.query(RawEntry).filter(RawEntry.reddit_id == reddit_id).update(metadata)
-                    session.commit()
+                    ro: RawEntry = RawEntry.objects(reddit_id=reddit_id).first()
+                    ro.raw_meta = metadata
+                    db_wrapper.save_object(ro)
         except Exception as e:
             # logger.error(e)
             logger.error(f"Could not find entry {str(reddit_id)} and update it with {metadata}")
@@ -47,11 +48,10 @@ def delete_files(to_delete):
     to_del_path = pimg / to_delete
     try:
 
-        with db_wrapper.session_scope() as session:
-            session.query(RawEntry).filter(RawEntry.local_path == str(to_del_path)).delete()
+        with db_wrapper.session_scope():
+            RawEntry.objects(local_path=str(to_del_path)).delete()
             if p.is_file():
                 os.remove(p)
-            session.commit()
             counter += 1
     except Exception as e:
         logger.error(e)
@@ -65,10 +65,9 @@ def extract_features_from_api():
         stats[subreddit.name] = {'correct': 0, 'error': 0}
         for idx2, (entry, post) in enumerate(subreddit.process()):
             try:
-                with db_wrapper.session_scope() as session:
-                    if entry and db_wrapper.save_object(entry, session=session):
+                with db_wrapper.session_scope():
+                    if entry and db_wrapper.save_object(entry):
                         stats[subreddit.name]['correct'] = stats[subreddit.name]['correct'] + 1
-                        session.commit()
                     else:
                         stats[subreddit.name]['error'] = stats[subreddit.name]['error'] + 1
                     if idx2 % 500 == 0 and idx2 != 0:
@@ -76,6 +75,7 @@ def extract_features_from_api():
             except Exception as e:
                 logger.error(e)
                 stats[subreddit.name]['error'] = stats[subreddit.name]['error'] + 1
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

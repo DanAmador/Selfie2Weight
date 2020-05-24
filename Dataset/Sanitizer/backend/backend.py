@@ -37,7 +37,7 @@ def next_unsanitized():
 def mark_as_empty(image_id, session):
     raw: RawEntry = db.get_by(RawEntry, "reddit_id", image_id, session=session)
     raw.has_been_sanitized = True
-    db.save_object(raw, session=session)
+    db.save_object(raw)
 
 
 @app.route("/img/<image_id>", methods=["POST"])
@@ -50,7 +50,7 @@ def save(image_id):
                     meta = entry["meta"]
                     sanitized = SanitizedEntry(x=meta["x"], y=meta["y"], weight=entry["data"]["weight"],
                                                width=meta["width"], height=meta["height"], reddit_id=image_id)
-                    db.save_object(sanitized, session=session)
+                    db.save_object(sanitized)
 
                 return Response({}, status=201)
             else:

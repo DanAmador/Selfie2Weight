@@ -6,7 +6,7 @@ from loguru import logger as dataset_logger
 dataset_logger.add("file.log", enqueue=True, rotation="1 week")
 
 dataset_logger.add(sys.stdout, colorize=True, format="<green>{time}</green> <level>{message}</level>", filter="scrapper", level="DEBUG")
-
+dataset_logger.info("Initializing logger")
 # logging.basicConfig(level=logging.DEBUG)
 # logging.getLogger("urllib3").setLevel(logging.WARNING)
 # logging.getLogger("psaw").setLevel(logging.WARNING)

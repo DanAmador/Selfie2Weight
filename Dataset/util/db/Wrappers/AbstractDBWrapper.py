@@ -21,5 +21,5 @@ class AbstractDBWrapper(ABC):
         raise NotImplementedError
 
     @staticmethod
-    def save_object(model, session):
+    def save_object(model):
         raise NotImplementedError

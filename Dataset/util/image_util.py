@@ -108,43 +108,38 @@ def check_duplicates() -> List[str]:
 
 # Go through table and delete images and delete entries without a valid image
 def download_raw_images(download_all=False):
-    query = {}
     logger.info("Downloading Images")
-    with db_wrapper.session_scope() as session:
-        session.expire_on_commit = False
-        query = session.query(RawEntry).all() if download_all else db_wrapper.get_by(RawEntry, "local_path", None,
-                                                                                     session=session, only_first=False)
+    with db_wrapper.session_scope():
+        query = RawEntry.objects if download_all else RawEntry.objects(local_path=None)
 
-    logger.info(f"Starting download from {len(query)} images")
-    urls = []
-    total_errors = 0
-    size = len(query)
-    current = 0
-    for idx, entry in enumerate(query):
-        urls.append(entry)
-        if len(urls) >= 300 or idx - 1 == size:
-            logger.info(f'Downloading images {current} to {idx} from {size}')
-            current = idx
-            try:
-                results = ThreadPool(8).imap_unordered(save_image, urls)
+        logger.info(f"Starting download from {len(query)} images")
+        urls = []
+        total_errors = 0
+        size = len(query)
+        current = 0
+        for idx, entry in enumerate(query):
+            urls.append(entry)
+            if len(urls) >= 300 or idx - 1 == size:
+                logger.info(f'Downloading images {current} to {idx} from {size}')
+                current = idx
+                try:
+                    results = ThreadPool(8).imap_unordered(save_image, urls)
 
-                with db_wrapper.session_scope() as session:
                     errors = 0
                     for success, path in results:
                         if success:
                             entry.local_path = str(path)
-                            db_wrapper.save_object(entry, session)
+                            db_wrapper.save_object(entry)
                         else:
                             errors += 1
-                            session.delete(entry)
+                            entry.delete()
                     total_errors += errors
-                    session.commit()
-            except Exception:
-                errors += len(urls)
-                logger.info(f'Whole batch crashed')
-                total_errors += errors
-            finally:
-                logger.info(f'{errors} errors in the last batch {errors / len(urls)}')
-                urls = []
+                except Exception:
+                    errors += len(urls)
+                    logger.info(f'Whole batch crashed')
+                    total_errors += errors
+                finally:
+                    logger.info(f'{errors} errors in the last batch {errors / len(urls)}')
+                    urls = []
 
     logger.info(f'{errors} errors from {size} images ({errors / size})')
