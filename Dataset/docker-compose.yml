@@ -21,7 +21,8 @@ services:
 #      - "5601:5601"
   scrapper:
     build:
-      dockerfile: Dockerfile
-      context: ./Scrapper
-
+      dockerfile: ./Scrapper/Dockerfile
+      context: .
+    volumes:
+      - .:/Dataset
 

@@ -1,22 +1,21 @@
 from contextlib import contextmanager
 
-from Dataset.util.db.SelfieMetadataIndex import SelfieMetadataIndex
 from Dataset.util.db.Wrappers.AbstractDBWrapper import AbstractDBWrapper
-from elasticsearch import Elasticsearch
+from mongoengine import *
+
+from Dataset.util.db.model import SanitizedEntry
 
 
-class ElasticWrapper(AbstractDBWrapper):
+class MongoWrapper(AbstractDBWrapper):
+    @staticmethod
     @contextmanager
-    def session_scope(self):
+    def session_scope():
         try:
-            yield Elasticsearch(['localhost:9200'])
+            yield connect(alias="session_scope")
         except Exception  as e:
             print(e)
-
-    def __init__(self):
-        es = Elasticsearch(['localhost:9200'])
-        self.index_name = "selfies"
-        SelfieMetadataIndex.create_index(es, self.index_name)
+        finally:
+            disconnect(alias="session_scope")
 
     @staticmethod
     def get_unsanitized(session, get_first=False):
@@ -54,5 +53,8 @@ class ElasticWrapper(AbstractDBWrapper):
         return matches["hits"][0] if len(matches) > 0 and only_first else matches["hits"]
 
     @staticmethod
-    def save_object(document, session):
+    def save_object(document: SanitizedEntry, session):
+        #TODO queries
+        #Location.objects(reddit_id=document.reddit_id).update_one(set__point=point, upsert=True)
+
         session.update(index="selfies", body={'doc': document, 'doc_as_upsert': True})
