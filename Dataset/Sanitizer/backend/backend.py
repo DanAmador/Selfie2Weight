@@ -5,9 +5,9 @@ from flask import Flask
 from flask import send_file, request, Response
 from flask_cors import CORS
 
-from Dataset.util.db.SQLWrapper import SQLWrapper
-from Dataset.util.db.model import RawEntry, SanitizedEntry
-from Dataset.util.dataset_logger import dataset_logger as logger
+from util.db.SQLWrapper import SQLWrapper
+from util.db.model import RawEntry, SanitizedEntry
+from util.dataset_logger import dataset_logger as logger
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////tmp/test.db'

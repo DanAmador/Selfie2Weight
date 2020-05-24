@@ -3,12 +3,12 @@ import os
 from datetime import datetime
 from pathlib import Path
 
-from Dataset.Scrapper.Subreddits import Brogress, ProgressPics
-from Dataset.util.dataset_logger import dataset_logger as logger
-from Dataset.util.db.Wrappers import MongoWrapper as db
+from Scrapper.Subreddits import Brogress, ProgressPics
+from util.dataset_logger import dataset_logger as logger
+from util.db.Wrappers import MongoWrapper as db
 
-from Dataset.util.db.model import RawEntry
-from Dataset.util.image_util import check_duplicates, download_raw_images, get_pictures_without_faces
+from util.db.model import RawEntry
+from util.image_util import check_duplicates, download_raw_images, get_pictures_without_faces
 
 p = Path.cwd() / 'dump'
 db_wrapper = db.MongoWrapper()

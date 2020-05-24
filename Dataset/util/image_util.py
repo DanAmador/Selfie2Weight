@@ -8,9 +8,9 @@ import cv2
 import requests
 from collections import namedtuple
 
-from Dataset.util.db.Wrappers import MongoWrapper as db
-from Dataset.util.dataset_logger import dataset_logger as logger
-from Dataset.util.db.model import RawEntry
+from util.db.Wrappers import MongoWrapper as db
+from util.dataset_logger import dataset_logger as logger
+from util.db.model import RawEntry
 
 db_wrapper = db.MongoWrapper()
 

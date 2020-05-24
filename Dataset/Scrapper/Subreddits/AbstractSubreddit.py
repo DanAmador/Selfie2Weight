@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 
 from psaw import PushshiftAPI
 
-from Dataset.util.db.model import RawEntry
+from util.db.model import RawEntry
 
 
 class AbstractSubreddit(ABC):

@@ -1,6 +1,6 @@
 from pathlib import Path
-import Dataset.util.db.SQLWrapper as db
-from Dataset.util.db.model import SanitizedEntry, RawEntry
+import util.db.SQLWrapper as db
+from util.db.model import SanitizedEntry, RawEntry
 
 from PIL import Image
 

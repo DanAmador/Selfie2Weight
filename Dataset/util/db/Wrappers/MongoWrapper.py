@@ -1,9 +1,9 @@
 from contextlib import contextmanager
 
-from Dataset.util.db.Wrappers.AbstractDBWrapper import AbstractDBWrapper
+from util.db.Wrappers.AbstractDBWrapper import AbstractDBWrapper
 from mongoengine import *
 
-from Dataset.util.db.model import SanitizedEntry
+from util.db.model import SanitizedEntry
 
 
 class MongoWrapper(AbstractDBWrapper):
