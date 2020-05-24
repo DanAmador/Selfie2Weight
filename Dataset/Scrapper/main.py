@@ -1,17 +1,17 @@
 import argparse
 import os
 from datetime import datetime
-from multiprocessing.pool import ThreadPool
 from pathlib import Path
 
-from Dataset.util.db.Wrappers.ElasticWrapper import ElasticWrapper
 from Dataset.Scrapper.Subreddits import Brogress, ProgressPics
 from Dataset.util.dataset_logger import dataset_logger as logger
+from Dataset.util.db.Wrappers import SQLWrapper  as db
+
 from Dataset.util.db.model import RawEntry
 from Dataset.util.image_util import check_duplicates, download_raw_images, get_pictures_without_faces
 
 p = Path.cwd() / 'dump'
-db_wrapper = ElasticWrapper()
+db_wrapper = db.SQLWrapper()
 
 pimg = (p / 'img')
 p.mkdir(parents=True, exist_ok=True)

@@ -8,7 +8,7 @@ import cv2
 import requests
 from collections import namedtuple
 
-import Dataset.util.db.SQLWrapper as db
+from Dataset.util.db.Wrappers import SQLWrapper  as db
 from Dataset.util.dataset_logger import dataset_logger as logger
 from Dataset.util.db.model import RawEntry
 

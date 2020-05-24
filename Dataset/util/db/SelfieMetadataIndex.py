@@ -1,7 +1,7 @@
 class SelfieMetadataIndex:
     @staticmethod
     def create_index(es, name):
-        if not es.indes.exists(index=name):
+        if not es.index.exists(index=name):
             index_body = {
                 "settings": {
                     "number_of_shards": 5,
