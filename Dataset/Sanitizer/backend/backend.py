@@ -5,7 +5,7 @@ from flask import Flask
 from flask import send_file, request, Response
 from flask_cors import CORS
 
-from util.db.SQLWrapper import SQLWrapper
+from util.db.Wrappers.MongoWrapper import MongoWrapper
 from util.db.model import RawEntry, SanitizedEntry
 from util.dataset_logger import dataset_logger as logger
 
@@ -62,7 +62,5 @@ def save(image_id):
 
 
 if __name__ == '__main__':
-    db = SQLWrapper(Path().cwd().parent.parent / "Scrapper" / 'dump')
-
-    # db.update(a)
+    db = MongoWrapper()
     app.run()
