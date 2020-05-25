@@ -42,14 +42,15 @@ def next_unsanitized(key):
             return {}
 
 
-@app.route("/meta/<image_id>")
+@app.route("/meta/<image_id>", methods=["POST"])
 def save_meta(image_id):
-    body = json.loads(request.data)
-    with db.session_scope():
-        raw: RawEntry = db.get_by(RawEntry, {"reddit_id": image_id})
-        raw.raw_meta = body.meta
-        db.save_object(raw)
-
+    body = request.data
+    if body:
+        with db.session_scope():
+            raw: RawEntry = db.get_by(RawEntry, {"reddit_id": image_id})
+            raw.raw_meta = body
+            db.save_object(raw)
+    return {}, status.HTTP_202_ACCEPTED
 
 def mark_as_empty(image_id):
     raw: RawEntry = db.get_by(RawEntry, {"reddit_id": image_id})
