@@ -62,7 +62,5 @@ def save(image_id):
 
 
 if __name__ == '__main__':
-    db = SQLWrapper(Path().cwd().parent.parent / "Scrapper" / 'dump')
-
-    # db.update(a)
+    db = MongoWrapper()
     app.run()
