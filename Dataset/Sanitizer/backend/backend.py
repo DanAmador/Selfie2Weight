@@ -1,16 +1,14 @@
 import json
-from pathlib import Path
 
-from flask import Flask
-from flask import send_file, request, Response
+from flask import request, send_file, Response, url_for, redirect
+from flask_api import FlaskAPI, status
 from flask_cors import CORS
 
+from util.dataset_logger import dataset_logger as logger
 from util.db.Wrappers.MongoWrapper import MongoWrapper
 from util.db.model import RawEntry, SanitizedEntry
-from util.dataset_logger import dataset_logger as logger
 
-app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////tmp/test.db'
+app = FlaskAPI(__name__)
 
 CORS(app)
 
@@ -23,15 +21,34 @@ def get_image_info(image_id):
 
 
 @app.route('/next', methods=["GET"])
-def next_unsanitized():
-    with db.session_scope():
-        res: RawEntry = db.get_unsanitized(get_first=True)
+def next():
+    return redirect(url_for("next_unsanitized", key="has_been_sanitized"))
 
+
+@app.route('/next/<key>', methods=["GET"])
+def next_unsanitized(key):
+    with db.session_scope():
+
+        res: RawEntry = db.get_by(RawEntry, {key: False}, only_first=True)
         if res:
+            if "local_path" in res:
+                res.local_path = url_for("get_image_info", image_id=res.reddit_id)
             return res.to_json()
         else:
-            logger.error("Could not find next unsanitized")
+            if key is "was_preprocessed":
+                logger.info("All images in db were preprocessed")
+                return {}, status.HTTP_204_NO_CONTENT
+            logger.error(f"Could not find next {key}")
             return {}
+
+
+@app.route("/meta/<image_id>")
+def save_meta(image_id):
+    body = json.loads(request.data)
+    with db.session_scope():
+        raw: RawEntry = db.get_by(RawEntry, {"reddit_id": image_id})
+        raw.raw_meta = body.meta
+        db.save_object(raw)
 
 
 def mark_as_empty(image_id):
@@ -44,7 +61,7 @@ def mark_as_empty(image_id):
 def save(image_id):
     try:
         body = json.loads(request.data)
-        with db.session_scope() as session:
+        with db.session_scope():
             if body:
                 for entry in body:
                     meta = entry["meta"]
@@ -54,7 +71,7 @@ def save(image_id):
 
                 return Response({}, status=201)
             else:
-                mark_as_empty(image_id, session)
+                mark_as_empty(image_id)
                 return Response({}, status=200)
 
     except Exception as e:
