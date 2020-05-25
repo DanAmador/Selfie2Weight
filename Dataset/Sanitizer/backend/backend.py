@@ -5,7 +5,7 @@ from flask import Flask
 from flask import send_file, request, Response
 from flask_cors import CORS
 
-from util.db.SQLWrapper import SQLWrapper
+from util.db.Wrappers.MongoWrapper import MongoWrapper
 from util.db.model import RawEntry, SanitizedEntry
 from util.dataset_logger import dataset_logger as logger
 
@@ -28,7 +28,7 @@ def next_unsanitized():
         res: RawEntry = db.get_unsanitized(session, get_first=True)
 
         if res:
-            return res.as_dict
+            return res.to_json()
         else:
             logger.error("Could not find next unsanitized")
             return {}

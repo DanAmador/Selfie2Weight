@@ -24,26 +24,9 @@ class MongoWrapper(AbstractDBWrapper):
             disconnect(alias="default")
 
     @staticmethod
-    def get_unsanitized(session, get_first=False):
-        query_body = {
-            "query": {
-                "bool": {
-                    "must":
-                        [
-                            {
-                                "term": {
-                                    "doc.has_been_sanitized": True
-                                }
-                            }
-                        ]
-
-                }
-            }
-        }
-
-        matches = session.search(body=query_body)
-
-        return matches["hits"][0] if len(matches) > 0 and get_first else matches["hits"]
+    def get_unsanitized(session, get_first=False) -> RawEntry:
+        resp = RawEntry.objects(has_been_sanitized=False).first()
+        return resp
 
     @staticmethod
     def get_by(model, key, val, session, only_first=True):
@@ -61,7 +44,8 @@ class MongoWrapper(AbstractDBWrapper):
     @staticmethod
     def save_object(document: Document):
         try:
-            u = {f"set__{key}": document.__getattribute__(key) for key in document._fields_ordered if key != "id" and document.__getattribute__(key) is not None}
+            u = {f"set__{key}": document.__getattribute__(key) for key in document._fields_ordered if
+                 key != "id" and document.__getattribute__(key) is not None}
             type(document).objects(reddit_id=document.reddit_id).update_one(upsert=True, **u)
             return True
         except Exception as e:

@@ -61,7 +61,7 @@ def get_pictures_without_faces() -> Tuple[List[str], List[Dict]]:
     no_faces_list = []
     feature_list = []
     index = 0
-    results = Pool(2).imap_unordered(does_not_have_faces, pimg.glob("**/*.jpg"))
+    results = (does_not_have_faces(fpath) for fpath in  pimg.glob("**/*.jpg"))
     for meta in results:
         index += 1
         fpath = meta.pop("path")
