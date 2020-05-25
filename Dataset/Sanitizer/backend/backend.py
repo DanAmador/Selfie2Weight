@@ -17,14 +17,14 @@ CORS(app)
 
 @app.route('/img/<image_id>', methods=["GET"])
 def get_image_info(image_id):
-    with db.session_scope() as session:
-        res: RawEntry = db.get_by(RawEntry, "reddit_id", image_id, session)
+    with db.session_scope():
+        res: RawEntry = db.get_by(RawEntry, {"reddit_id": image_id})
         return send_file(res.local_path, mimetype='image/gif')
 
 
 @app.route('/next', methods=["GET"])
 def next_unsanitized():
-    with db.session_scope() as session:
+    with db.session_scope():
         res: RawEntry = db.get_unsanitized(get_first=True)
 
         if res:
@@ -34,20 +34,8 @@ def next_unsanitized():
             return {}
 
 
-@app.route('/next_meta', methods=["GET"])
-def next_without_meta():
-    with db.session_scope() as session:
-        res: RawEntry = db.get_by()
-
-        if res:
-            return res.to_json()
-        else:
-            logger.error("Could not find next unsanitized")
-            return {}
-
-
 def mark_as_empty(image_id):
-    raw: RawEntry = db.get_by(RawEntry, "reddit_id", image_id)
+    raw: RawEntry = db.get_by(RawEntry, {"reddit_id": image_id})
     raw.has_been_sanitized = True
     db.save_object(raw)
 

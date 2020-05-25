@@ -17,7 +17,7 @@ class AbstractDBWrapper(ABC):
         raise NotImplementedError
 
     @staticmethod
-    def get_by(model, key, val, only_first=True):
+    def get_by(model, query, only_first=True):
         raise NotImplementedError
 
     @staticmethod

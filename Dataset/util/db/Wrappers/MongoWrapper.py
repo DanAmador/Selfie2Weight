@@ -29,9 +29,8 @@ class MongoWrapper(AbstractDBWrapper):
         return resp
 
     @staticmethod
-    def get_by(model: Document, key, val, only_first=True):
-        query = {key, val}
-        return model.objects(*query).first() if only_first else model.objects(*query)
+    def get_by(model: Document, query, only_first=True):
+        return model.objects(__raw__=query).first() if only_first else model.objects(__raw__=query)
 
     @staticmethod
     def save_object(document: Document):

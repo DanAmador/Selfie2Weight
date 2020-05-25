@@ -17,9 +17,10 @@ services:
       context: .
     volumes:
       - img_dump:/Dataset/Scrapper/dump
+    depends_on:
+      - mongodb
   backend:
     network_mode: "host"
-
     build:
       dockerfile: ./Sanitizer/backend/Dockerfile
       context: .
@@ -36,4 +37,4 @@ services:
       - backend
 volumes:
   mongodb_data_container:
-  img_dump: .
+  img_dump:

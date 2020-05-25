@@ -1,9 +1,9 @@
 import argparse
+import sys
 from datetime import datetime
 from multiprocessing.pool import ThreadPool
 from pathlib import Path
 
-from Scrapper.Subreddits import Brogress, ProgressPics
 from util.dataset_logger import dataset_logger as logger
 from util.db.Wrappers import MongoWrapper as db
 from util.db.model import RawEntry
@@ -26,42 +26,37 @@ def download_raw_images(download_all=False):
         query = RawEntry.objects if download_all else RawEntry.objects(local_path=None)
 
         logger.info(f"Starting download from {len(query)} images")
-        urls = []
         total_errors = 0
-        size = len(query)
+        size = len(query) if len(query) != 0 else None
         current = 0
         for idx, entry in enumerate(query):
-            urls.append(entry)
-            if len(urls) >= 300 or idx - 1 == size:
+            if idx % 300 == 1 or idx - 1 == size:
                 logger.info(f'Downloading images {current} to {idx} from {size}')
                 current = idx
-                try:
-                    results = ThreadPool(8).imap_unordered(save_image, urls)
+            try:
+                success, path = save_image(entry)
+                if success:
+                    entry.local_path = str(path)
+                    db_wrapper.save_object(entry)
+                else:
+                    entry.delete()
+                    total_errors += 1
+            except Exception as e:
+                logger.error(f'Whole batch crashed')
+                logger.error(e)
+                total_errors += 1
 
-                    errors = 0
-                    for success, path in results:
-                        if success:
-                            entry.local_path = str(path)
-                            db_wrapper.save_object(entry)
-                        else:
-                            errors += 1
-                            entry.delete()
-                    total_errors += errors
-                except Exception:
-                    errors += len(urls)
-                    logger.info(f'Whole batch crashed')
-                    total_errors += errors
-                finally:
-                    logger.info(f'{errors} errors in the last batch {errors / len(urls)}')
-                    urls = []
-
-    logger.info(f'{errors} errors from {size} images ({errors / size})')
+        if size:
+            logger.info(f'{total_errors} errors found in {len(query)}  which is {total_errors / size}')
 
 
-def extract_features_from_api():
+def extract_features_from_api(limit=sys.maxsize):
     for idx, subreddit in enumerate(subreddits):
+
         stats[subreddit.name] = {'correct': 0, 'error': 0}
         for idx2, (entry, post) in enumerate(subreddit.process()):
+            if idx2 > limit:
+                return
             try:
                 with db_wrapper.session_scope():
                     if entry and db_wrapper.save_object(entry):
@@ -85,6 +80,7 @@ if __name__ == '__main__':
 
     logger.info("Starting")
     if args.meta:
+        from Scrapper.Subreddits import Brogress, ProgressPics
         logger.info("Running metadata download")
         subreddits = [ProgressPics(), Brogress()]
         extract_features_from_api()
