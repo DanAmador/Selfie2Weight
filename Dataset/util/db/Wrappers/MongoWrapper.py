@@ -24,22 +24,14 @@ class MongoWrapper(AbstractDBWrapper):
             disconnect(alias="default")
 
     @staticmethod
-    def get_unsanitized(session, get_first=False) -> RawEntry:
+    def get_unsanitized(get_first=False) -> RawEntry:
         resp = RawEntry.objects(has_been_sanitized=False).first()
         return resp
 
     @staticmethod
-    def get_by(model, key, val, session, only_first=True):
-        query_body = {
-            "query": {
-                "match": {
-                    key: val
-                }
-            }
-        }
-        matches = session.search(body=query_body)
-
-        return matches["hits"][0] if len(matches) > 0 and only_first else matches["hits"]
+    def get_by(model: Document, key, val, only_first=True):
+        query = {key, val}
+        return model.objects(*query).first() if only_first else model.objects(*query)
 
     @staticmethod
     def save_object(document: Document):

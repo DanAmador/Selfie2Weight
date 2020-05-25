@@ -13,11 +13,11 @@ class AbstractDBWrapper(ABC):
         raise NotImplementedError
 
     @staticmethod
-    def get_unsanitized(session, get_first=False):
+    def get_unsanitized(get_first=False):
         raise NotImplementedError
 
     @staticmethod
-    def get_by(model, key, val, session, only_first=True):
+    def get_by(model, key, val, only_first=True):
         raise NotImplementedError
 
     @staticmethod

@@ -36,4 +36,4 @@ services:
       - backend
 volumes:
   mongodb_data_container:
-  img_dump:
+  img_dump: .

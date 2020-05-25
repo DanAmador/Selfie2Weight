@@ -25,7 +25,7 @@ def get_image_info(image_id):
 @app.route('/next', methods=["GET"])
 def next_unsanitized():
     with db.session_scope() as session:
-        res: RawEntry = db.get_unsanitized(session, get_first=True)
+        res: RawEntry = db.get_unsanitized(get_first=True)
 
         if res:
             return res.to_json()
@@ -34,8 +34,20 @@ def next_unsanitized():
             return {}
 
 
-def mark_as_empty(image_id, session):
-    raw: RawEntry = db.get_by(RawEntry, "reddit_id", image_id, session=session)
+@app.route('/next_meta', methods=["GET"])
+def next_without_meta():
+    with db.session_scope() as session:
+        res: RawEntry = db.get_by()
+
+        if res:
+            return res.to_json()
+        else:
+            logger.error("Could not find next unsanitized")
+            return {}
+
+
+def mark_as_empty(image_id):
+    raw: RawEntry = db.get_by(RawEntry, "reddit_id", image_id)
     raw.has_been_sanitized = True
     db.save_object(raw)
 

@@ -1,14 +1,14 @@
 import argparse
-import os
 from datetime import datetime
+from multiprocessing.pool import ThreadPool
 from pathlib import Path
 
 from Scrapper.Subreddits import Brogress, ProgressPics
+from Scrapper.metadata_analyze_with_server import delete_file
 from util.dataset_logger import dataset_logger as logger
 from util.db.Wrappers import MongoWrapper as db
-
 from util.db.model import RawEntry
-from util.image_util import check_duplicates, download_raw_images, get_pictures_without_faces
+from util.image_util import save_image, check_duplicates
 
 p = Path.cwd() / 'dump'
 db_wrapper = db.MongoWrapper()
@@ -20,44 +20,43 @@ subreddits = []
 stats = {}
 
 
-def update_sanitized(feature_metadata):
-    logger.info(f"Updating {len(feature_metadata)}")
-    error = 0
+# Go through table and delete images and delete entries without a valid image
+def download_raw_images(download_all=False):
+    logger.info("Downloading Images")
+    with db_wrapper.session_scope():
+        query = RawEntry.objects if download_all else RawEntry.objects(local_path=None)
 
-    for metadata in feature_metadata:
-        reddit_id = metadata.pop("reddit_id")
+        logger.info(f"Starting download from {len(query)} images")
+        urls = []
+        total_errors = 0
+        size = len(query)
+        current = 0
+        for idx, entry in enumerate(query):
+            urls.append(entry)
+            if len(urls) >= 300 or idx - 1 == size:
+                logger.info(f'Downloading images {current} to {idx} from {size}')
+                current = idx
+                try:
+                    results = ThreadPool(8).imap_unordered(save_image, urls)
 
-        try:
-            with db_wrapper.session_scope():
-                if metadata:
-                    ro: RawEntry = RawEntry.objects(reddit_id=reddit_id).first()
-                    ro.raw_meta = metadata
-                    db_wrapper.save_object(ro)
-        except Exception as e:
-            # logger.error(e)
-            logger.error(f"Could not find entry {str(reddit_id)} and update it with {metadata}")
-            error += 1
-            continue
+                    errors = 0
+                    for success, path in results:
+                        if success:
+                            entry.local_path = str(path)
+                            db_wrapper.save_object(entry)
+                        else:
+                            errors += 1
+                            entry.delete()
+                    total_errors += errors
+                except Exception:
+                    errors += len(urls)
+                    logger.info(f'Whole batch crashed')
+                    total_errors += errors
+                finally:
+                    logger.info(f'{errors} errors in the last batch {errors / len(urls)}')
+                    urls = []
 
-    logger.info(f"Correctly updated {len(feature_metadata) - error} from {len(feature_metadata)}")
-
-
-def delete_files(to_delete):
-    counter = 0
-    errors = 0
-    to_del_path = pimg / to_delete
-    try:
-
-        with db_wrapper.session_scope():
-            RawEntry.objects(local_path=str(to_del_path)).delete()
-            if p.is_file():
-                os.remove(p)
-            counter += 1
-    except Exception as e:
-        logger.error(e)
-        errors += 1
-
-    return errors
+    logger.info(f'{errors} errors from {size} images ({errors / size})')
 
 
 def extract_features_from_api():
@@ -81,38 +80,26 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--meta", help="Download metadata from subreddits", type=bool, default=True)
     parser.add_argument("--images", help="Download images", type=bool, default=True)
-    parser.add_argument("--clean", help="Delete duplicates/pictures without faces", type=bool, default=True)
     args = parser.parse_args()
 
     start_time = datetime.now()
 
     logger.info("Starting")
-    #if args.meta:
-    #    logger.info("Running metadata download")
-    #    subreddits = [ProgressPics(), Brogress()]
-    #    extract_features_from_api()
-    #if args.images:
-    #    logger.info("Downloading raw images from metadata")
-    #    download_raw_images()
-    if args.clean:
-        logger.info("Running duplicate and face check")
-        logger.info("Checking for duplicates")
-       # duplicates = check_duplicates()
-        #logger.info(f'Found {len(duplicates)} duplicates')
-       # e = sum([delete_files(d) for d in duplicates])
-        #logger.info(f"Deleted {len(duplicates) - e} entries in duplicates")
-#        logger.error(f"Unsuccesfully deleted {e} entries in duplicates")
+    if args.meta:
+        logger.info("Running metadata download")
+        subreddits = [ProgressPics(), Brogress()]
+        extract_features_from_api()
+    if args.images:
+        logger.info("Downloading raw images from metadata")
+        download_raw_images()
 
-        logger.info("Face check")
-        no_faces, feature_metadata = get_pictures_without_faces()
-        update_sanitized(feature_metadata)
-        logger.info(f'Found {len(no_faces)} with no faces')
-        e = sum([delete_files(d) for d in no_faces])
-
-        logger.info(f"Deleted {len(no_faces) - e} entries in no face")
-        logger.error(f"Unsuccesfully deleted {e} entries in duplicates")
-
-        logger.info(stats)
-
+    logger.info("Running duplicate and face check")
+    logger.info("Checking for duplicates")
+    duplicates = check_duplicates()
+    logger.info(f'Found {len(duplicates)} duplicates')
+    e = sum([delete_file(d) for d in duplicates])
+    logger.info(f"Deleted {len(duplicates) - e} entries in duplicates")
+    logger.error(f"Unsuccesfully deleted {e} entries in duplicates")
+    logger.info(stats)
     end_time = datetime.now() - start_time
     logger.info(f"Took {end_time} to complete")
