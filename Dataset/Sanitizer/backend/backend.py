@@ -20,7 +20,7 @@ def get_image_info(image_id):
         return send_file(res.local_path, mimetype='image/gif')
 
 
-@app.route('/next', methods=["GET"])
+@app.route('/next/', methods=["GET"])
 def next():
     return redirect(url_for("next_unsanitized", key="has_been_sanitized"))
 
@@ -35,7 +35,7 @@ def next_unsanitized(key):
                 res.img_url = url_for("get_image_info", image_id=res.reddit_id)
             return res.to_json()
         else:
-            if key is "was_preprocessed":
+            if key == "was_preprocessed":
                 logger.info("All images in db were preprocessed")
                 return {}, status.HTTP_204_NO_CONTENT
             logger.error(f"Could not find next {key}")
@@ -82,4 +82,4 @@ def save(image_id):
 
 if __name__ == '__main__':
     db = MongoWrapper()
-    app.run()
+    app.run('0.0.0.0')
