@@ -33,9 +33,7 @@ def next_by(key):
         if len(res) > 0:
             if "img_url" in res:
                 res.img_url = url_for("get_image_info", image_id=res.reddit_id)
-            t = res[0]
-            t.pop("_id")
-            return t
+            return res.to_json()
         else:
             if key == "was_preprocessed":
                 logger.info("All images in db were preprocessed")

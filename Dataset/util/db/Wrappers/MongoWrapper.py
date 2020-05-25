@@ -1,4 +1,5 @@
 from contextlib import contextmanager
+from random import choice
 
 from util.dataset_logger import dataset_logger
 from util.db.Wrappers.AbstractDBWrapper import AbstractDBWrapper
@@ -25,15 +26,9 @@ class MongoWrapper(AbstractDBWrapper):
 
     @staticmethod
     def get_by(model: Document, query, **kwargs):
-        pipeline = [
-            {
-                "$match": query},
-            {
-                "$sample": {"size": 1}
-            }
-        ]
-        docs = list(model.objects().aggregate(*pipeline))
-        return docs
+        docs = model.objects(__raw__=query)[:100]
+
+        return choice(docs)
 
     @staticmethod
     def save_object(document: Document):
