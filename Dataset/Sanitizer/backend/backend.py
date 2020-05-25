@@ -61,14 +61,15 @@ def mark_as_empty(image_id):
 @app.route("/img/<image_id>", methods=["POST"])
 def save(image_id):
     try:
-        body = json.loads(request.data)
+        body = request.data
         with db.session_scope():
             if body:
                 for entry in body:
-                    meta = entry["meta"]
-                    sanitized = SanitizedEntry(x=meta["x"], y=meta["y"], weight=entry["data"]["weight"],
-                                               width=meta["width"], height=meta["height"], reddit_id=image_id)
-                    db.save_object(sanitized)
+                    meta = entry.get("meta", None)
+                    if meta:
+                        sanitized = SanitizedEntry(x=meta["x"], y=meta["y"], weight=entry["data"]["weight"],
+                                                   width=meta["width"], height=meta["height"], reddit_id=image_id)
+                        db.save_object(sanitized)
 
                 return Response({}, status=201)
             else:
