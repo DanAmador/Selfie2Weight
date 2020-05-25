@@ -1,4 +1,4 @@
-from Dataset.Scrapper.Subreddits.ProgressPics import ProgressPics
+from Scrapper.Subreddits.ProgressPics import ProgressPics
 
 
 class Brogress(ProgressPics):

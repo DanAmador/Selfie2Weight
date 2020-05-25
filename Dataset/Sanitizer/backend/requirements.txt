@@ -1,0 +1,6 @@
+# platform: win-64
+flask
+loguru
+mongoengine
+flask-cors
+Flask-API

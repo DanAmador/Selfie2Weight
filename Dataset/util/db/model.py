@@ -1,37 +1,33 @@
-from sqlalchemy import Column, String, Integer, Float, ForeignKey, Boolean
-from sqlalchemy.orm import relationship
-
-from Dataset.util.db.base_class import Base
+from mongoengine import *
 
 
-class RawEntry(Base):
-    __tablename__ = 'raw_entry'
-    title = Column(String, nullable=False)
-    sex = Column(String, nullable=False)
-    age = Column(Integer, nullable=False)
-    height = Column(Float, nullable=False)
-    start_weight = Column(Float, nullable=False)
-    end_weight = Column(Float, nullable=False)
-    reddit_id = Column(String, primary_key=True)
-    img_url = Column(String, nullable=False)
-    local_path = Column(String)
-    has_been_sanitized = Column(Boolean, default=False, nullable=False)
-    sanitized_entries = relationship("SanitizedEntry")
-    frontalface_default = Column(Boolean, default=False, nullable=False)
-    profileface = Column(Boolean, default=False, nullable=False)
-    upperbody = Column(Boolean, default=False, nullable=False)
+class RawEntry(Document):
+    title = StringField(required=True)
+    reddit_id = StringField(unique=True)
+    weight = DecimalField(min_value=0)
+    sex = StringField(required=True)
+    age = IntField(required=True, min_value=10, max_value=100)
+    height = DecimalField(min_value=0, max_value=2.2)
+    start_weight = DecimalField(min_value=0)
+    end_weight = DecimalField(min_value=0)
+    img_url = StringField(max_length=200, required=True)
+    local_path = StringField()
+    sanitized_entries = ListField(ReferenceField("SanitizedEntry"))
+    raw_meta = ListField(DictField())
+    has_been_sanitized = BooleanField(required=True, default=False)
+    was_preprocessed = BooleanField(required=True, default=False)
 
 
-class SanitizedEntry(Base):
-    __tablename__ = 'sanitized_entry'
-    id = Column('id', Integer, primary_key=True)
-    weight = Column(Float, nullable=False)
-    local_path = Column(String)
-    height = Column(Float, nullable=False)
-    width = Column(Float, nullable=False)
-    x = Column(Float, nullable=False)
-    y = Column(Float, nullable=False)
+class SanitizedEntry(Document):
+    reddit_id = StringField(unique=True)
+    weight = DecimalField(min_value=0)
+    local_path = StringField(required=True)
+    height = DecimalField(min_value=0)
+    width = DecimalField(min_value=0)
+    x = DecimalField(min_value=0)
+    y = DecimalField(min_value=0)
 
 
-    reddit_id = Column(String, ForeignKey('raw_entry.reddit_id'), nullable=False)
-    parent = relationship("RawEntry", back_populates="sanitized_entries")
+class FeatureMeta(Document):
+    title = StringField(max_length=200, required=True)
+    present = BooleanField(required=True, default=False)

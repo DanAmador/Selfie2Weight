@@ -4,17 +4,18 @@ from pathlib import Path
 
 from sqlalchemy.orm import sessionmaker, scoped_session
 
-from Dataset.util.dataset_logger import dataset_logger as logger
+from util.dataset_logger import dataset_logger as logger
 from sqlalchemy import create_engine, and_
 
-from Dataset.util.db.base_class import Base
-from Dataset.util.db.model import RawEntry
+from util.db.Wrappers.AbstractDBWrapper import AbstractDBWrapper
+from util.db.base_class import Base
+from util.db.model import RawEntry
 from sqlalchemy.sql.expression import func, select
 
 p = Path().cwd().parent / "Scrapper" / 'dump'
 
 
-class DBWrapper:
+class SQLWrapper(AbstractDBWrapper):
     def __init__(self, db_path=p) -> None:
         db_path = db_path / "dump.sqlite"
         if not db_path.is_file():

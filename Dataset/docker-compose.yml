@@ -1,15 +1,40 @@
-version: '2.0'
+# ./docker-compose.yml
+version: '3'
 services:
-  web:
-    build: .
+  mongodb:
+    image: mongo:latest
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: rootpassword
     ports:
-    - "5000:5000"
+      - 127.0.0.1:27017:27017
     volumes:
-    - .:/code
-    - logvolume01:/var/log
-    links:
-    - redis
-  redis:
-    image: redis
+      - mongodb_data_container:/data/db
+  scrapper:
+    network_mode: "host"
+    build:
+      dockerfile: ./Scrapper/Dockerfile
+      context: .
+    volumes:
+      - img_dump:/Dataset/Scrapper/dump
+    depends_on:
+      - mongodb
+  backend:
+    network_mode: "host"
+    build:
+      dockerfile: ./Sanitizer/backend/Dockerfile
+      context: .
+    volumes:
+      - img_dump:/Dataset/Scrapper/dump
+    depends_on:
+      - mongodb
+  frontend:
+    network_mode: "host"
+    build:
+      dockerfile: ./Sanitizer/frontend/Dockerfile
+      context: .
+    depends_on:
+      - backend
 volumes:
-  logvolume01: {}
+  mongodb_data_container:
+  img_dump:

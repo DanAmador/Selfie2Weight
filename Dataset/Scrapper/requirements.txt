@@ -1,0 +1,6 @@
+# platform: win-64
+psaw==0.0.12
+Pillow==7.1.2
+requests==2.23.0
+loguru
+mongoengine
