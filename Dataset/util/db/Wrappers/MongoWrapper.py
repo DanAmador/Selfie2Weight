@@ -24,11 +24,6 @@ class MongoWrapper(AbstractDBWrapper):
             disconnect(alias="default")
 
     @staticmethod
-    def get_unsanitized(get_first=False) -> RawEntry:
-        resp = RawEntry.objects(has_been_sanitized=False).first()
-        return resp
-
-    @staticmethod
     def get_by(model: Document, query, only_first=True):
         return model.objects(__raw__=query).first() if only_first else model.objects(__raw__=query)
 
