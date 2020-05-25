@@ -67,23 +67,23 @@ def get_pictures_without_faces() -> Tuple[List[str], List[Dict]]:
     img_gen = get_image()
     for doc in img_gen:
         index += 1
-        meta = does_not_have_faces(doc.get("local_path"), None)
-        if meta:
-            fpath = meta.pop("path")
+        fpath = doc.get("image_url", None)
+        if fpath:
+            meta = does_not_have_faces(fpath)
             no_face = True
             try:
                 if index % 200 == 10:
                     logger.info(f"{index}  analyzed and {len(no_faces_list)} have no faces so far ")
                 if "frontalface_default" in meta.keys() or "profileface" in meta.keys():
                     no_face = False
-                meta["reddit_id"] = fpath.name.split(".")[0]
+                meta["reddit_id"] = doc["reddit_id"]
                 if no_face:
                     no_faces_list.append(fpath)
                 else:
                     feature_list.append(meta)
             except Exception as e:
                 logger.error(e)
-                no_faces_list.append(fpath)
+                no_faces_list.append(doc["img_url"])
     return no_faces_list, feature_list
 
 

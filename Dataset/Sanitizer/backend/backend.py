@@ -31,8 +31,8 @@ def next_unsanitized(key):
 
         res: RawEntry = db.get_by(RawEntry, {key: False}, only_first=True)
         if res:
-            if "local_path" in res:
-                res.local_path = url_for("get_image_info", image_id=res.reddit_id)
+            if "img_url" in res:
+                res.img_url = url_for("get_image_info", image_id=res.reddit_id)
             return res.to_json()
         else:
             if key is "was_preprocessed":
