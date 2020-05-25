@@ -4,11 +4,10 @@ from multiprocessing.pool import ThreadPool
 from pathlib import Path
 
 from Scrapper.Subreddits import Brogress, ProgressPics
-from Scrapper.metadata_analyze_with_server import delete_file
 from util.dataset_logger import dataset_logger as logger
 from util.db.Wrappers import MongoWrapper as db
 from util.db.model import RawEntry
-from util.image_util import save_image, check_duplicates
+from util.image_util import save_image, check_duplicates, delete_file
 
 p = Path.cwd() / 'dump'
 db_wrapper = db.MongoWrapper()

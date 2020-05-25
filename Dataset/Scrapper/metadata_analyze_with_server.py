@@ -10,7 +10,7 @@ from util.image_util import delete_file
 
 p = Path.cwd() / 'dump'
 db_wrapper = db.MongoWrapper()
-cascades_classifiers = {str(e).split(".xml")[0].split("haarcascade_")[1]: cv2.cascadeclassifier(str(e)) for e in
+cascades_classifiers = {str(e).split(".xml")[0].split("haarcascade_")[1]: cv2.CascadeClassifier(str(e)) for e in
                         p.parent.parent.rglob("cascades/*.xml")}
 pimg = (p / 'img')
 
