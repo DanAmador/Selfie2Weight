@@ -16,24 +16,26 @@ CORS(app)
 @app.route('/img/<image_id>', methods=["GET"])
 def get_image_info(image_id):
     with db.session_scope():
-        res: RawEntry = db.get_by(RawEntry, {"reddit_id": image_id})
+        res: RawEntry = db.get_by(RawEntry, {"reddit_id": image_id}, )
         return send_file(res.local_path, mimetype='image/gif')
 
 
 @app.route('/next/', methods=["GET"])
 def next():
-    return redirect(url_for("next_unsanitized", key="has_been_sanitized"))
+    return redirect(url_for("next_by", key="has_been_sanitized"))
 
 
 @app.route('/next/<key>', methods=["GET"])
-def next_unsanitized(key):
+def next_by(key):
     with db.session_scope():
 
-        res: RawEntry = db.get_by(RawEntry, {key: False}, only_first=True)
-        if res:
+        res: RawEntry = db.get_by(RawEntry, {key: False} )
+        if len(res) > 0:
             if "img_url" in res:
                 res.img_url = url_for("get_image_info", image_id=res.reddit_id)
-            return res.to_json()
+            t = res[0]
+            t.pop("_id")
+            return t
         else:
             if key == "was_preprocessed":
                 logger.info("All images in db were preprocessed")
@@ -47,13 +49,15 @@ def save_meta(image_id):
     body = request.data
     if body:
         with db.session_scope():
-            raw: RawEntry = db.get_by(RawEntry, {"reddit_id": image_id})
+            raw: RawEntry = db.get_by(RawEntry, {"reddit_id": image_id}, )
             raw.raw_meta = body
+            raw.has_been_sanitized = True
             db.save_object(raw)
     return {}, status.HTTP_202_ACCEPTED
 
+
 def mark_as_empty(image_id):
-    raw: RawEntry = db.get_by(RawEntry, {"reddit_id": image_id})
+    raw: RawEntry = db.get_by(RawEntry, {"reddit_id": image_id}, )
     raw.has_been_sanitized = True
     db.save_object(raw)
 
@@ -61,14 +65,15 @@ def mark_as_empty(image_id):
 @app.route("/img/<image_id>", methods=["POST"])
 def save(image_id):
     try:
-        body = json.loads(request.data)
+        body = request.data
         with db.session_scope():
             if body:
                 for entry in body:
-                    meta = entry["meta"]
-                    sanitized = SanitizedEntry(x=meta["x"], y=meta["y"], weight=entry["data"]["weight"],
-                                               width=meta["width"], height=meta["height"], reddit_id=image_id)
-                    db.save_object(sanitized)
+                    meta = entry.get("meta", None)
+                    if meta:
+                        sanitized = SanitizedEntry(x=meta["x"], y=meta["y"], weight=entry["data"]["weight"],
+                                                   width=meta["width"], height=meta["height"], reddit_id=image_id)
+                        db.save_object(sanitized)
 
                 return Response({}, status=201)
             else:

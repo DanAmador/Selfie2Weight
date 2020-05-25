@@ -24,8 +24,16 @@ class MongoWrapper(AbstractDBWrapper):
             disconnect(alias="default")
 
     @staticmethod
-    def get_by(model: Document, query, only_first=True):
-        return model.objects(__raw__=query).first() if only_first else model.objects(__raw__=query)
+    def get_by(model: Document, query, **kwargs):
+        pipeline = [
+            {
+                "$match": query},
+            {
+                "$sample": {"size": 1}
+            }
+        ]
+        docs = list(model.objects().aggregate(*pipeline))
+        return docs
 
     @staticmethod
     def save_object(document: Document):
