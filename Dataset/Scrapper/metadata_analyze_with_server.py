@@ -7,16 +7,12 @@ import requests
 import cv2
 
 from util.dataset_logger import dataset_logger as logger
-from util.db.Wrappers import MongoWrapper as db
-from util.db.model import RawEntry
-from util.image_util import delete_file
 
 p = Path.cwd() / 'dump'
-db_wrapper = db.MongoWrapper()
 cascades_classifiers = {str(e).split(".xml")[0].split("haarcascade_")[1]: cv2.CascadeClassifier(str(e)) for e in
                         p.parent.parent.rglob("cascades/*.xml")}
 pimg = (p / 'img')
-host = "localhost:5000"
+host = "http://192.168.0.115:5000"
 
 
 # METHOD #1: OpenCV, NumPy, and urllib
@@ -59,6 +55,10 @@ def get_image():
         res = requests.get(f"{host}{next_str}")
 
 
+def delete_image(reddit_id):
+    requests.post(f"{host}/img/{reddit_id}")
+
+
 def get_pictures_without_faces() -> Tuple[List[str], List[Dict]]:
     logger.info("Checking faces")
     no_faces_list = []
@@ -68,7 +68,8 @@ def get_pictures_without_faces() -> Tuple[List[str], List[Dict]]:
     for doc in img_gen:
         index += 1
         fpath = doc.get("image_url", None)
-        if fpath:
+        reddit_id = doc.get("reddit_id")
+        if fpath and reddit_id:
             meta = does_not_have_faces(fpath)
             no_face = True
             try:
@@ -76,10 +77,11 @@ def get_pictures_without_faces() -> Tuple[List[str], List[Dict]]:
                     logger.info(f"{index}  analyzed and {len(no_faces_list)} have no faces so far ")
                 if "frontalface_default" in meta.keys() or "profileface" in meta.keys():
                     no_face = False
-                meta["reddit_id"] = doc["reddit_id"]
+                meta["reddit_id"] = reddit_id
                 if no_face:
-                    no_faces_list.append(fpath)
+                    delete_image(reddit_id)
                 else:
+                    update_sanitized(reddit_id, meta)
                     feature_list.append(meta)
             except Exception as e:
                 logger.error(e)
@@ -87,19 +89,15 @@ def get_pictures_without_faces() -> Tuple[List[str], List[Dict]]:
     return no_faces_list, feature_list
 
 
-def update_sanitized(feature_metadata):
+def update_sanitized(reddit_id, feature_metadata):
     logger.info(f"Updating {len(feature_metadata)}")
     error = 0
 
     for metadata in feature_metadata:
-        reddit_id = metadata.pop("reddit_id")
 
         try:
-            with db_wrapper.session_scope():
-                if metadata:
-                    ro: RawEntry = RawEntry.objects(reddit_id=reddit_id).first()
-                    ro.raw_meta = metadata
-                    db_wrapper.save_object(ro)
+            res = requests.post(f"{host}/meta/{reddit_id}", data=metadata)
+
         except Exception as e:
             # logger.error(e)
             logger.error(f"Could not find entry {str(reddit_id)} and update it with {metadata}")
@@ -111,7 +109,7 @@ def update_sanitized(feature_metadata):
 
 if __name__ == "__main__":
     logger.info("Face check")
-    no_faces, feature_metadata = get_pictures_without_faces()
+    get_pictures_without_faces()
     update_sanitized(feature_metadata)
     logger.info(f'Found {len(no_faces)} with no faces')
     e = sum([delete_file(d) for d in no_faces])

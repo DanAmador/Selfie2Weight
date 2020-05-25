@@ -42,12 +42,13 @@ def next_unsanitized(key):
             return {}
 
 
-@app.route("/meta/<image_id>")
+@app.route("/meta/<image_id>", methods=["POST"])
 def save_meta(image_id):
     body = json.loads(request.data)
     with db.session_scope():
         raw: RawEntry = db.get_by(RawEntry, {"reddit_id": image_id})
         raw.raw_meta = body.meta
+        raw.has_been_sanitized = True
         db.save_object(raw)
 
 
