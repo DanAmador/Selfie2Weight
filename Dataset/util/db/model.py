@@ -13,7 +13,7 @@ class RawEntry(Document):
     img_url = StringField(max_length=200, required=True)
     local_path = StringField()
     sanitized_entries = ListField(ReferenceField("SanitizedEntry"))
-    raw_meta = ListField(DictField())
+    raw_meta = DictField()
     has_been_sanitized = BooleanField(required=True, default=False)
     was_preprocessed = BooleanField(required=True, default=False)
 

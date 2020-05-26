@@ -20,8 +20,9 @@ def get_image_info(image_id):
         return send_file(res.local_path, mimetype='image/gif')
 
 
+@app.route('/', methods=["GET"])
 @app.route('/next/', methods=["GET"])
-def next():
+def start():
     return redirect(url_for("next_by", key="has_been_sanitized"))
 
 
@@ -29,7 +30,7 @@ def next():
 def next_by(key):
     with db.session_scope():
 
-        res: RawEntry = db.get_by(RawEntry, {key: False} )
+        res: RawEntry = db.get_by(RawEntry, {key: False})
         if len(res) > 0:
             if "img_url" in res:
                 res.img_url = url_for("get_image_info", image_id=res.reddit_id)
@@ -47,17 +48,23 @@ def save_meta(image_id):
     body = request.data
     if body:
         with db.session_scope():
-            raw: RawEntry = db.get_by(RawEntry, {"reddit_id": image_id}, )
-            raw.raw_meta = body
-            raw.has_been_sanitized = True
+            raw: RawEntry = RawEntry.objects(reddit_id=image_id).update(set__raw_meta=body, has_been_sanitized=True)
             db.save_object(raw)
     return {}, status.HTTP_202_ACCEPTED
 
 
 def mark_as_empty(image_id):
-    raw: RawEntry = db.get_by(RawEntry, {"reddit_id": image_id}, )
-    raw.has_been_sanitized = True
-    db.save_object(raw)
+    with db.session_scope():
+        raw: RawEntry = db.get_by(RawEntry, {"reddit_id": image_id}, )
+        raw.has_been_sanitized = True
+        db.save_object(raw)
+
+
+@app.route("/img/meta/<image_id>", methods=["GET"])
+def get_by_id(image_id):
+    with db.session_scope():
+        res = RawEntry.objects(reddit_id=image_id).first()
+        return res.to_json()
 
 
 @app.route("/img/<image_id>", methods=["POST"])
