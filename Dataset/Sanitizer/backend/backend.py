@@ -49,7 +49,7 @@ def save_meta(image_id):
     body = request.data
     if body:
         with db.session_scope():
-            RawEntry.objects(reddit_id=image_id).update(set__raw_meta=body, has_been_sanitized=True)
+            RawEntry.objects(reddit_id=image_id).update(set__raw_meta=body, set__was_preprocessed=True)
     return {}, status.HTTP_202_ACCEPTED
 
 
@@ -79,7 +79,7 @@ def save(image_id):
                         sanitized = SanitizedEntry(x=meta["x"], y=meta["y"], weight=entry["data"]["weight"],
                                                    width=meta["width"], height=meta["height"], reddit_id=image_id)
                         db.save_object(sanitized)
-
+                        RawEntry.objects(reddit_id=image_id).update(set__raw_meta=body, set__has_been_sanitized=True)
                 return Response({}, status=201)
             else:
                 mark_as_empty(image_id)
