@@ -26,9 +26,18 @@ class MongoWrapper(AbstractDBWrapper):
 
     @staticmethod
     def get_by(model: Document, query, **kwargs):
-        docs = model.objects(__raw__=query)[:100]
+        pipeline = [
+            {
+                "$match": query
+            },
+            {
+                "$sample": {"size": 5}
+            }
 
-        return choice(docs)
+        ]
+        docs = choice(list(model.objects.aggregate(*pipeline)))
+
+        return docs
 
     @staticmethod
     def save_object(document: Document):

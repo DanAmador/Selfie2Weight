@@ -17,7 +17,7 @@ CORS(app)
 def get_image_info(image_id):
     with db.session_scope():
         res: RawEntry = db.get_by(RawEntry, {"reddit_id": image_id}, )
-        return send_file(res.local_path, mimetype='image/gif')
+        return send_file(res["local_path"], mimetype='image/gif')
 
 
 @app.route('/', methods=["GET"])
@@ -31,10 +31,11 @@ def next_by(key):
     with db.session_scope():
 
         res: RawEntry = db.get_by(RawEntry, {key: False})
-        if len(res) > 0:
-            if "img_url" in res:
-                res.img_url = url_for("get_image_info", image_id=res.reddit_id)
-            return res.to_json()
+        if res:
+            res.pop("_id")
+            if "img_url" in res and "reddit_id" in res:
+                res["img_url"] = url_for("get_image_info", image_id=res["reddit_id"])
+            return res, status.HTTP_200_OK
         else:
             if key == "was_preprocessed":
                 logger.info("All images in db were preprocessed")
@@ -48,8 +49,7 @@ def save_meta(image_id):
     body = request.data
     if body:
         with db.session_scope():
-            raw: RawEntry = RawEntry.objects(reddit_id=image_id).update(set__raw_meta=body, has_been_sanitized=True)
-            db.save_object(raw)
+            RawEntry.objects(reddit_id=image_id).update(set__raw_meta=body, has_been_sanitized=True)
     return {}, status.HTTP_202_ACCEPTED
 
 
