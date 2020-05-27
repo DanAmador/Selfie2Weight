@@ -7,6 +7,6 @@ WORKDIR /Dataset/Sanitizer/frontend
 
 RUN npm install
 
-RUN npm start
+CMD npm start
 
 

@@ -30,7 +30,7 @@ def start():
 def next_by(key):
     with db.session_scope():
 
-        res: RawEntry = db.get_by(RawEntry, {key: False})
+        res: RawEntry = db.get_by(RawEntry, {key: False, "has_image": True})
         if res:
             res.pop("_id")
             if "img_url" in res and "reddit_id" in res:
@@ -55,7 +55,7 @@ def save_meta(image_id):
 
 def mark_as_empty(image_id):
     with db.session_scope():
-        raw: RawEntry = db.get_by(RawEntry, {"reddit_id": image_id}, )
+        raw: RawEntry = RawEntry.objects(reddit_id=image_id)
         raw.has_been_sanitized = True
         db.save_object(raw)
 

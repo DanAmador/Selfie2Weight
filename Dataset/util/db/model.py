@@ -16,6 +16,7 @@ class RawEntry(Document):
     raw_meta = DictField()
     has_been_sanitized = BooleanField(required=True, default=False)
     was_preprocessed = BooleanField(required=True, default=False)
+    has_image = BooleanField(required=True, default=False)
 
 
 class SanitizedEntry(Document):

@@ -23,7 +23,7 @@ stats = {}
 def download_raw_images(download_all=False):
     logger.info("Downloading Images")
     with db_wrapper.session_scope():
-        query = RawEntry.objects if download_all else RawEntry.objects(local_path=None)
+        query = RawEntry.objects(has_image=False)
 
         logger.info(f"Starting download from {len(query)} images")
         total_errors = 0
@@ -37,6 +37,7 @@ def download_raw_images(download_all=False):
                 success, path = save_image(entry)
                 if success:
                     entry.local_path = str(path)
+                    entry.has_image = True
                     db_wrapper.save_object(entry)
                 else:
                     entry.delete()
@@ -81,6 +82,7 @@ if __name__ == '__main__':
     logger.info("Starting")
     if args.meta:
         from Scrapper.Subreddits import Brogress, ProgressPics
+
         logger.info("Running metadata download")
         subreddits = [ProgressPics(), Brogress()]
         extract_features_from_api()
