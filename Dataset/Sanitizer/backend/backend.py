@@ -1,4 +1,5 @@
 import json
+import os
 
 from flask import request, send_file, Response, url_for, redirect
 from flask_api import FlaskAPI, status
@@ -53,6 +54,7 @@ def save_meta(image_id):
             for k, v in body.items():
                 features = []
                 for f in v:
+                    logger.info(v)
                     features.append(FeatureMeta(height=f["height"], width=f["width"], y=f["y"], x=f["x"]))
 
                     d[k] = features
@@ -63,9 +65,14 @@ def save_meta(image_id):
 
 def mark_as_empty(image_id):
     with db.session_scope():
-        raw: RawEntry = RawEntry.objects(reddit_id=image_id)
-        raw.has_been_sanitized = True
-        db.save_object(raw)
+        rid = ""
+        try:
+            raw: RawEntry = RawEntry.objects(reddit_id=image_id).first()
+            rid = raw.reddit_id
+            os.remove()
+            raw.delete()
+        except Exception:
+            logger.error(f"Can't delete {rid}")
 
 
 @app.route("/img/meta/<image_id>", methods=["GET"])
