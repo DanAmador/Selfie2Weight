@@ -2,12 +2,10 @@ from mongoengine import *
 
 
 class FeatureMeta(EmbeddedDocument):
-    title = StringField(max_length=200, required=True)
-    present = BooleanField(required=True, default=False)
-    x: IntField(required=True)
-    y: IntField(required=True)
-    width: IntField(required=True)
-    height: IntField(required=True)
+    x = IntField(required=True)
+    y = IntField(required=True)
+    width = IntField(required=True)
+    height = IntField(required=True)
 
 
 class RawEntry(Document):
