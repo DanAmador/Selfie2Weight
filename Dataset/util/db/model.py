@@ -1,6 +1,15 @@
 from mongoengine import *
 
 
+class FeatureMeta(EmbeddedDocument):
+    title = StringField(max_length=200, required=True)
+    present = BooleanField(required=True, default=False)
+    x: IntField(required=True)
+    y: IntField(required=True)
+    width: IntField(required=True)
+    height: IntField(required=True)
+
+
 class RawEntry(Document):
     title = StringField(required=True)
     reddit_id = StringField(unique=True)
@@ -13,7 +22,7 @@ class RawEntry(Document):
     img_url = StringField(max_length=200, required=True)
     local_path = StringField()
     sanitized_entries = ListField(ReferenceField("SanitizedEntry"))
-    raw_meta = DictField()
+    raw_meta = DictField(EmbeddedDocumentListField(FeatureMeta))
     has_been_sanitized = BooleanField(required=True, default=False)
     was_preprocessed = BooleanField(required=True, default=False)
     has_image = BooleanField(required=True, default=False)
@@ -27,8 +36,3 @@ class SanitizedEntry(Document):
     width = DecimalField(min_value=0)
     x = DecimalField(min_value=0)
     y = DecimalField(min_value=0)
-
-
-class FeatureMeta(Document):
-    title = StringField(max_length=200, required=True)
-    present = BooleanField(required=True, default=False)
