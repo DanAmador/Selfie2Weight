@@ -4,6 +4,7 @@ from typing import Dict
 import cv2
 import imutils
 import requests
+from datetime import datetime
 
 from util.dataset_logger import dataset_logger as logger
 
@@ -16,7 +17,9 @@ host = "http://192.168.0.115:5000"
 
 def analyze_single_image(img_path) -> Dict[str, bool]:
     face_meta = {}
-    image = imutils.url_to_image(f"{host}{img_path}")
+    url = f"{host}{img_path}"
+    logger.info(url)
+    image = imutils.url_to_image(url)
     for name, cascade in cascades_classifiers.items():
         faces = cascade.detectMultiScale(
             image,
@@ -25,7 +28,10 @@ def analyze_single_image(img_path) -> Dict[str, bool]:
             minSize=(30, 30)
         )
         if len(faces) > 0:
-            face_meta[name] = True
+            m = []
+            for (x, y, w, h) in faces:
+                m.append({"x": x, "y": y, "width": w, "height": h})
+            face_meta[name] = m
     del image
     return face_meta
 
@@ -34,13 +40,9 @@ def not_preprocessed_generator():
     next_str = "/next/was_preprocessed"
 
     res = requests.get(f"{host}{next_str}")
-    last = {}
     while res.status_code != 204:
         current = res.json()
         yield current
-        if last == current:
-            break
-        last = current
         res = requests.get(f"{host}{next_str}")
 
 
@@ -52,7 +54,7 @@ def analyze_cascades_from_api():
     for index, doc in enumerate(img_gen):
         fpath = doc.get("img_url", None)
         reddit_id = doc.get("reddit_id", None)
-        if fpath and reddit_id:
+        if fpath and reddit_id and "local_path" in doc:
             meta = analyze_single_image(fpath)
             no_face = True
             try:
@@ -62,19 +64,19 @@ def analyze_cascades_from_api():
                             f"{index}  analyzed and {no_face_counter} have no faces so far {index / no_face_counter}")
                 if "frontalface_default" in meta.keys() or "profileface" in meta.keys():
                     no_face = False
-                meta["reddit_id"] = reddit_id
                 if no_face:
                     no_face_counter += 1
                     requests.post(f"{host}/img/{reddit_id}")
                 else:
-                    update_sanitized(reddit_id, meta)
+                    update_meta(reddit_id, meta)
             except Exception as e:
                 logger.error(e)
     logger.info(f'Found {no_face_counter} with no faces')
 
 
-def update_sanitized(reddit_id, feature_metadata):
+def update_meta(reddit_id, feature_metadata):
     try:
+        print(feature_metadata)
         res = requests.post(f"{host}/meta/{reddit_id}", data=feature_metadata)
     except Exception as e:
         # logger.error(e)
@@ -85,4 +87,8 @@ def update_sanitized(reddit_id, feature_metadata):
 
 if __name__ == "__main__":
     logger.info("Face check")
+    start_time = datetime.now()
+
     analyze_cascades_from_api()
+    end_time = datetime.now() - start_time
+    logger.info(f"Took {end_time} to complete")
