@@ -36,13 +36,12 @@ def analyze_single_image(img_path) -> Dict[str, bool]:
 
 
 def not_preprocessed_generator():
-    next_str = "/next/was_preprocessed"
-
-    res = requests.get(f"{host}{next_str}")
+    next_str = f"{host}/next/was_preprocessed"
+    res = requests.get(next_str)
     while res.status_code != 204:
         current = res.json()
         yield current
-        res = requests.get(f"{host}{next_str}")
+        res = requests.get(next_str)
 
 
 def analyze_cascades_from_api():
@@ -55,14 +54,11 @@ def analyze_cascades_from_api():
         reddit_id = doc.get("reddit_id", None)
         if fpath and reddit_id and "local_path" in doc:
             meta = analyze_single_image(fpath)
-            no_face = True
             try:
                 if index % 100 == 10:
                     logger.info(
                         f"{index}  analyzed and {no_face_counter} have no faces so far {no_face_counter / index}")
-                if "frontalface_default" in meta.keys() or "profileface" in meta.keys():
-                    no_face = False
-                if no_face:
+                if "frontalface_default" not in meta.keys() and "profileface" not in meta.keys():
                     no_face_counter += 1
                     requests.post(f"{host}/img/{reddit_id}")
                 else:
@@ -76,7 +72,7 @@ def analyze_cascades_from_api():
 
 def update_meta(reddit_id, feature_metadata):
     try:
-        res = requests.post(f"{host}/meta/{reddit_id}", json=feature_metadata)
+        requests.post(f"{host}/meta/{reddit_id}", json=feature_metadata)
     except Exception as e:
         logger.error(e)
         logger.error(f"Could not find entry {str(reddit_id)} and update it with {feature_metadata}")
@@ -87,7 +83,6 @@ def update_meta(reddit_id, feature_metadata):
 if __name__ == "__main__":
     logger.info("Face check")
     start_time = datetime.now()
-
     analyze_cascades_from_api()
     end_time = datetime.now() - start_time
     logger.info(f"Took {end_time} to complete")
