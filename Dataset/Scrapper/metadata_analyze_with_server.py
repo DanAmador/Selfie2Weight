@@ -18,7 +18,6 @@ host = "http://192.168.0.115:5000"
 def analyze_single_image(img_path) -> Dict[str, bool]:
     face_meta = {}
     url = f"{host}{img_path}"
-    logger.info(url)
     image = imutils.url_to_image(url)
     for name, cascade in cascades_classifiers.items():
         faces = cascade.detectMultiScale(
@@ -30,7 +29,7 @@ def analyze_single_image(img_path) -> Dict[str, bool]:
         if len(faces) > 0:
             m = []
             for (x, y, w, h) in faces:
-                m.append({"x": x, "y": y, "width": w, "height": h})
+                m.append({"x": int(x), "y": int(y), "width": int(w), "height": int(h)})
             face_meta[name] = m
     del image
     return face_meta
@@ -76,10 +75,11 @@ def analyze_cascades_from_api():
 
 def update_meta(reddit_id, feature_metadata):
     try:
-        print(feature_metadata)
-        res = requests.post(f"{host}/meta/{reddit_id}", data=feature_metadata)
+        logger.info(f"{host}/meta/{reddit_id}")
+        logger.info(feature_metadata)
+        res = requests.post(f"{host}/meta/{reddit_id}", json=feature_metadata)
     except Exception as e:
-        # logger.error(e)
+        logger.error(e)
         logger.error(f"Could not find entry {str(reddit_id)} and update it with {feature_metadata}")
         return False
     return True
