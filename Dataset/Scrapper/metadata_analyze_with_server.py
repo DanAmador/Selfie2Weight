@@ -48,7 +48,7 @@ def not_preprocessed_generator():
 def analyze_cascades_from_api():
     logger.info("Checking faces")
     no_face_counter = 0
-
+    face_counter = 0
     img_gen = not_preprocessed_generator()
     for index, doc in enumerate(img_gen):
         fpath = doc.get("img_url", None)
@@ -57,26 +57,25 @@ def analyze_cascades_from_api():
             meta = analyze_single_image(fpath)
             no_face = True
             try:
-                if index % 200 == 10:
-                    if no_face_counter > 0:
-                        logger.info(
-                            f"{index}  analyzed and {no_face_counter} have no faces so far {index / no_face_counter}")
+                if index % 100 == 10:
+                    logger.info(
+                        f"{index}  analyzed and {no_face_counter} have no faces so far {no_face_counter / index}")
                 if "frontalface_default" in meta.keys() or "profileface" in meta.keys():
                     no_face = False
                 if no_face:
                     no_face_counter += 1
                     requests.post(f"{host}/img/{reddit_id}")
                 else:
+                    face_counter += 1
                     update_meta(reddit_id, meta)
             except Exception as e:
                 logger.error(e)
     logger.info(f'Found {no_face_counter} with no faces')
+    logger.info(f'Found {face_counter} with faces!! :D')
 
 
 def update_meta(reddit_id, feature_metadata):
     try:
-        logger.info(f"{host}/meta/{reddit_id}")
-        logger.info(feature_metadata)
         res = requests.post(f"{host}/meta/{reddit_id}", json=feature_metadata)
     except Exception as e:
         logger.error(e)
