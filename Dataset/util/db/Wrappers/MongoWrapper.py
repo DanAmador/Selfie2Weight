@@ -31,7 +31,7 @@ class MongoWrapper(AbstractDBWrapper):
                 "$match": query
             },
             {
-                "$sample": {"size": 5}
+                "$sample": {"size": 1}
             }
 
         ]

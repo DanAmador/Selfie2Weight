@@ -35,7 +35,7 @@ def next_by(key):
         if res:
             res.pop("_id")
             if "img_url" in res and "reddit_id" in res:
-                res["img_url"] = url_for("get_image_info", image_id=res["reddit_id"])
+               res["img_url"] = url_for("get_image_info", image_id=res["reddit_id"])
             return res, status.HTTP_200_OK
         else:
             if key == "was_preprocessed":
@@ -54,7 +54,6 @@ def save_meta(image_id):
             for k, v in body.items():
                 features = []
                 for f in v:
-                    logger.info(v)
                     features.append(FeatureMeta(height=f["height"], width=f["width"], y=f["y"], x=f["x"]))
 
                     d[k] = features
@@ -69,9 +68,10 @@ def mark_as_empty(image_id):
         try:
             raw: RawEntry = RawEntry.objects(reddit_id=image_id).first()
             rid = raw.reddit_id
-            os.remove()
+            os.remove(raw.local_path)
             raw.delete()
-        except Exception:
+        except Exception as e:
+            logger.error(e)
             logger.error(f"Can't delete {rid}")
 
 
@@ -107,4 +107,5 @@ def save(image_id):
 
 if __name__ == '__main__':
     db = MongoWrapper()
+    test = {}
     app.run('0.0.0.0')
