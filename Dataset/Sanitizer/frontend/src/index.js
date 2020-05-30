@@ -11,8 +11,7 @@ import 'react-toastify/dist/ReactToastify.css';
 
 import {GlobalHotKeys} from "react-hotkeys";
 
-// const cropper = React.createRef(null);
-const BASE_URL = "http://127.0.0.1:5000"
+const BASE_URL = `http://${window.location.hostname}:5000`;
 
 class App extends React.Component {
     componentDidMount() {

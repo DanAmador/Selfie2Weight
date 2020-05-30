@@ -16,7 +16,8 @@
     "react-hotkeys": "^2.0.0",
     "react-scripts": "3.4.1",
     "react-toastify": "^6.0.0-rc.0",
-    "semantic-ui-react": "^0.88.2"
+    "semantic-ui-react": "^0.88.2",
+    "ip": "latest"
   },
   "eslintConfig": {
     "extends": "react-app"
