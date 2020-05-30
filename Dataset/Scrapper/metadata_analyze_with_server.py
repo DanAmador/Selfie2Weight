@@ -38,7 +38,7 @@ def analyze_single_image(img_path) -> Dict[str, bool]:
 def not_preprocessed_generator():
     next_str = f"{host}/next/was_preprocessed"
     res = requests.get(next_str)
-    while res.status_code != 204:
+    while res.json():
         current = res.json()
         yield current
         res = requests.get(next_str)
