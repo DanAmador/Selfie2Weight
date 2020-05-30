@@ -22,8 +22,8 @@ def delete_file(to_delete: Path):
     try:
         with db_wrapper.session_scope():
             RawEntry.objects(local_path=str(to_del_path)).delete()
-            if p.is_file():
-                os.remove(p)
+            if to_del_path.is_file():
+                os.remove(to_del_path)
             counter += 1
     except Exception as e:
         logger.error(e)

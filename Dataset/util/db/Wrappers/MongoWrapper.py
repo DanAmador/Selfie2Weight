@@ -1,4 +1,5 @@
 from contextlib import contextmanager
+from random import choice
 
 from util.dataset_logger import dataset_logger
 from util.db.Wrappers.AbstractDBWrapper import AbstractDBWrapper
@@ -27,13 +28,16 @@ class MongoWrapper(AbstractDBWrapper):
     def get_by(model: Document, query, **kwargs):
         pipeline = [
             {
-                "$match": query},
+                "$match": query
+            },
             {
                 "$sample": {"size": 1}
             }
+
         ]
-        docs = list(model.objects().aggregate(*pipeline))
-        return docs
+        docs = list(model.objects.aggregate(*pipeline))
+
+        return docs[0] if len(docs) > 0 else {}
 
     @staticmethod
     def save_object(document: Document):

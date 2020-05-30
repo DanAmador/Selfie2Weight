@@ -1,4 +1,5 @@
 import json
+import os
 
 from flask import request, send_file, Response, url_for, redirect
 from flask_api import FlaskAPI, status
@@ -6,7 +7,7 @@ from flask_cors import CORS
 
 from util.dataset_logger import dataset_logger as logger
 from util.db.Wrappers.MongoWrapper import MongoWrapper
-from util.db.model import RawEntry, SanitizedEntry
+from util.db.model import RawEntry, SanitizedEntry, FeatureMeta
 
 app = FlaskAPI(__name__)
 
@@ -17,11 +18,12 @@ CORS(app)
 def get_image_info(image_id):
     with db.session_scope():
         res: RawEntry = db.get_by(RawEntry, {"reddit_id": image_id}, )
-        return send_file(res.local_path, mimetype='image/gif')
+        return send_file(res["local_path"], mimetype='image/gif')
 
 
+@app.route('/', methods=["GET"])
 @app.route('/next/', methods=["GET"])
-def next():
+def start():
     return redirect(url_for("next_by", key="has_been_sanitized"))
 
 
@@ -29,13 +31,12 @@ def next():
 def next_by(key):
     with db.session_scope():
 
-        res: RawEntry = db.get_by(RawEntry, {key: False} )
-        if len(res) > 0:
-            if "img_url" in res:
-                res.img_url = url_for("get_image_info", image_id=res.reddit_id)
-            t = res[0]
-            t.pop("_id")
-            return t
+        res: RawEntry = db.get_by(RawEntry, {key: False, "has_image": True})
+        if res:
+            res.pop("_id")
+            if "img_url" in res and "reddit_id" in res:
+               res["img_url"] = url_for("get_image_info", image_id=res["reddit_id"])
+            return res, status.HTTP_200_OK
         else:
             if key == "was_preprocessed":
                 logger.info("All images in db were preprocessed")
@@ -49,17 +50,36 @@ def save_meta(image_id):
     body = request.data
     if body:
         with db.session_scope():
-            raw: RawEntry = db.get_by(RawEntry, {"reddit_id": image_id}, )
-            raw.raw_meta = body
-            raw.has_been_sanitized = True
-            db.save_object(raw)
-    return {}, status.HTTP_202_ACCEPTED
+            d = {}
+            for k, v in body.items():
+                features = []
+                for f in v:
+                    features.append(FeatureMeta(height=f["height"], width=f["width"], y=f["y"], x=f["x"]))
+
+                    d[k] = features
+
+                RawEntry.objects(reddit_id=image_id).update(set__raw_meta=d, set__was_preprocessed=True)
+        return {}, status.HTTP_202_ACCEPTED
 
 
 def mark_as_empty(image_id):
-    raw: RawEntry = db.get_by(RawEntry, {"reddit_id": image_id}, )
-    raw.has_been_sanitized = True
-    db.save_object(raw)
+    with db.session_scope():
+        rid = ""
+        try:
+            raw: RawEntry = RawEntry.objects(reddit_id=image_id).first()
+            rid = raw.reddit_id
+            os.remove(raw.local_path)
+            raw.delete()
+        except Exception as e:
+            logger.error(e)
+            logger.error(f"Can't delete {rid}")
+
+
+@app.route("/img/meta/<image_id>", methods=["GET"])
+def get_by_id(image_id):
+    with db.session_scope():
+        res = RawEntry.objects(reddit_id=image_id).first()
+        return res.to_json()
 
 
 @app.route("/img/<image_id>", methods=["POST"])
@@ -74,7 +94,8 @@ def save(image_id):
                         sanitized = SanitizedEntry(x=meta["x"], y=meta["y"], weight=entry["data"]["weight"],
                                                    width=meta["width"], height=meta["height"], reddit_id=image_id)
                         db.save_object(sanitized)
-
+                        RawEntry.objects(reddit_id=image_id).update(set__raw_meta=body,
+                                                                    set__has_been_sanitized=True)
                 return Response({}, status=201)
             else:
                 mark_as_empty(image_id)
@@ -86,4 +107,5 @@ def save(image_id):
 
 if __name__ == '__main__':
     db = MongoWrapper()
+    test = {}
     app.run('0.0.0.0')
