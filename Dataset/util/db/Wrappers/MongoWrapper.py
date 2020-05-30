@@ -31,13 +31,13 @@ class MongoWrapper(AbstractDBWrapper):
                 "$match": query
             },
             {
-                "$sample": {"size": 5}
+                "$sample": {"size": 1}
             }
 
         ]
-        docs = choice(list(model.objects.aggregate(*pipeline)))
+        docs = list(model.objects.aggregate(*pipeline))
 
-        return docs
+        return docs[0] if len(docs) > 0 else {}
 
     @staticmethod
     def save_object(document: Document):
