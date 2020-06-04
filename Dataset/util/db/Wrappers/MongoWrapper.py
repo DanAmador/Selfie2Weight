@@ -15,8 +15,7 @@ class MongoWrapper(AbstractDBWrapper):
     def session_scope(**kwargs):
         try:
             # AYY LMAO SECURITY
-            s = connect("selfies", username="root", password="rootpassword",
-                        authentication_source='admin', alias="default")
+            s = connect("selfies", alias="default")
             yield s
         except Exception  as e:
             print(e)

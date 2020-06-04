@@ -17,7 +17,7 @@ CORS(app)
 @app.route('/img/<image_id>', methods=["GET"])
 def get_image_info(image_id):
     with db.session_scope():
-        res: RawEntry = db.get_by(RawEntry, {"reddit_id": image_id}, )
+        res: RawEntry = RawEntry.objects(reddit_id=image_id)
         return send_file(res["local_path"], mimetype='image/gif')
 
 
@@ -35,7 +35,7 @@ def next_by(key):
         if res:
             res.pop("_id")
             if "img_url" in res and "reddit_id" in res:
-               res["img_url"] = url_for("get_image_info", image_id=res["reddit_id"])
+                res["img_url"] = url_for("get_image_info", image_id=res["reddit_id"])
             return res, status.HTTP_200_OK
         else:
             if key == "was_preprocessed":
