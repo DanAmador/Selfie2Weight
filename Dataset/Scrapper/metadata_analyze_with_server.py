@@ -61,7 +61,7 @@ def analyze_cascades_from_api():
                     if no_face_counter > 0:
                         logger.info(
                             f"{index}  analyzed and {no_face_counter} have no faces so far {index / no_face_counter}")
-                if "frontalface_default" in meta.keys() or "profileface" in meta.keys():
+                if "frontalface_default" in meta.keys() or "profileface" in meta.keys() and "upper_body" in meta.keys():
                     no_face = False
                 if no_face:
                     no_face_counter += 1
