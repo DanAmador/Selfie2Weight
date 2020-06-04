@@ -5,11 +5,25 @@ import Cropper from 'react-cropper';
 
 import 'cropperjs/dist/cropper.css'; // see installation section above for versions of NPM older than 3.0.0
 import CropGallery from "./cropGallery"
-import {Button, ButtonContent, Card, Dropdown, Grid, Header, Icon, Label, List, Message, Popup} from 'semantic-ui-react'
+import {
+    Button,
+    ButtonContent,
+    Card,
+    Dropdown,
+    Grid,
+    Header,
+    Icon,
+    Label,
+    List,
+    Message,
+    Popup,
+    Segment
+} from 'semantic-ui-react'
 import {toast, ToastContainer} from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 import {GlobalHotKeys} from "react-hotkeys";
+import Responsive from "semantic-ui-react/dist/commonjs/addons/Responsive";
 
 const BASE_URL = `http://${window.location.hostname}:5000`;
 
@@ -326,31 +340,30 @@ class App extends React.Component {
             <div className="App">
                 <GlobalHotKeys keyMap={this.keyMap} handlers={this.handlers}/>
 
-                <ToastContainer
-                    position="top-right"
-                    autoClose={5000}
-                    hideProgressBar={false}
-                    newestOnTop={false}
-                    closeOnClick
-                    rtl={false}
-                    pauseOnFocusLoss
-                    draggable
-                    pauseOnHover
-                /> <Header> {this.getCurrentInfo()}</Header>
+                <ToastContainer position="top-right" autoClose={5000} hideProgressBar={false} newestOnTop={false}
+                                closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover/>
                 <Grid column={2} divided>
-                    <Grid.Column width={8}>
 
-                        <Cropper
-                            style={{height: 400, width: '100%'}}
-                            guides={true}
-                            src={this.state.imageSrc}
-                            viewMode={2}
-                            ref={'cropper'}
-                            cropend={this.cropImage}
-                        />
+                    <Grid.Column width={8}>
+                        <Responsive as={Segment}>
+
+
+                            <Header> {this.getCurrentInfo()}</Header>
+
+                            <Cropper
+                                style={{minHeight: 300, maxHeight: 1000,height: '100%', width: '100%'}}
+                                guides={true}
+                                src={this.state.imageSrc}
+                                viewMode={2}
+                                ref={'cropper'}
+                                cropend={this.cropImage}
+                            />
+                        </Responsive>
+
                         <Grid.Row columns={3}>
                             <Grid.Column>
-                                <Button.Group>
+                                <Responsive as={Button.Group}>
+
                                     <Button primary animated onClick={this.onSendEmpty} style={{float: 'right'}}>
 
                                         <ButtonContent visible> Delete Image</ButtonContent>
@@ -360,10 +373,10 @@ class App extends React.Component {
                                         <ButtonContent visible> Post</ButtonContent>
                                         <ButtonContent hidden> {this.keyMap.SUBMIT}</ButtonContent>
                                     </Button>
-                                </Button.Group>
+                                </Responsive>
                             </Grid.Column>
                             <Grid.Column>
-                                <Button.Group>
+                                <Responsive as={Button.Group}>
 
                                     <Button animated onClick={this.onAddGallery} style={{float: 'right'}}>
                                         <ButtonContent visible> Extra Weight</ButtonContent>
@@ -393,12 +406,12 @@ class App extends React.Component {
                                             />
                                         </Dropdown.Menu>
                                     </Dropdown>
-                                </Button.Group>
+                                </Responsive>
                             </Grid.Column>
 
                         </Grid.Row>
                     </Grid.Column>
-                    <Grid.Column>
+                    <Grid.Column width={4}>
                         <Card.Group>
                             {this.state.data.map((data, idx) =>
                                 <CropGallery indexChangeCallback={this.onIndexChange}

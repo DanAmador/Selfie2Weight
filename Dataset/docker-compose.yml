@@ -29,6 +29,7 @@ services:
     depends_on:
       - mongodb
   frontend:
+    stdin_open: true
     network_mode: "host"
     build:
       dockerfile: ./Sanitizer/frontend/Dockerfile
