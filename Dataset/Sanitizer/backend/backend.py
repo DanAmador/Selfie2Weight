@@ -1,5 +1,5 @@
-import json
 import os
+from pathlib import Path
 
 from flask import request, send_file, Response, url_for, redirect
 from flask_api import FlaskAPI, status
@@ -17,8 +17,8 @@ CORS(app)
 @app.route('/img/<image_id>', methods=["GET"])
 def get_image_info(image_id):
     with db.session_scope():
-        res: RawEntry = RawEntry.objects(reddit_id=image_id)
-        return send_file(res["local_path"], mimetype='image/gif')
+        res: RawEntry = RawEntry.objects(reddit_id=image_id).first()
+        return send_file(res.local_path, mimetype='image/jpg')
 
 
 @app.route('/', methods=["GET"])
@@ -32,7 +32,7 @@ def next_by(key):
     with db.session_scope():
 
         res: RawEntry = db.get_by(RawEntry, {key: False, "has_image": True})
-        if res:
+        if res and Path(res["local_path"]).is_file():
             res.pop("_id")
             if "img_url" in res and "reddit_id" in res:
                 res["img_url"] = url_for("get_image_info", image_id=res["reddit_id"])
