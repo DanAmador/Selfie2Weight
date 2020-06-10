@@ -80,21 +80,22 @@ def double_check_files():
         for total, raw in enumerate(RawEntry.objects):
             if total % 100 == 1:
                 logger.info(f"{no_file} from {total} so far have no file  {(no_file / total) * 100}'")
-
-            if not Path(raw.local_path).is_file():
-                p = raw.local_path
-                try:
+            try:
+                if raw.local_path and not Path(raw.local_path).is_file():
+                    p = raw.local_path
                     success, path = save_image(raw)
                     if not success or not Path(path).is_file():
                         raw.delete()
                         os.remove(p)
-                except Exception as e:
-                    logger.error(f"Error at deleting {raw.reddit_id}")
-                finally:
-                    correct += 1
+                else:
+                    no_file += 1
 
-            else:
+                    raw.delete()
+            except Exception as e:
                 no_file += 1
+                logger.error(f"Error at deleting {raw.reddit_id}: {e}")
+            finally:
+                correct += 1
         logger.info(f"{correct} from {total} correct {(correct / total) * 100}'")
         logger.info(f"{no_file} from {total} has no file  {(correct / total) * 100}'")
 

@@ -94,8 +94,10 @@ def save(image_id):
                         sanitized = SanitizedEntry(x=meta["x"], y=meta["y"], weight=entry["data"]["weight"],
                                                    width=meta["width"], height=meta["height"], reddit_id=image_id)
                         db.save_object(sanitized)
-                        RawEntry.objects(reddit_id=image_id).update(set__raw_meta=body,
-                                                                    set__has_been_sanitized=True)
+                        r = RawEntry.objects(reddit_id=image_id).first()
+                        r.raw_meta = body
+                        r.has_been_sanitized = True
+                        r.save()
                 return Response({}, status=201)
             else:
                 mark_as_empty(image_id)
