@@ -1,6 +1,7 @@
 import React from 'react';
 
 import {Card, Grid, Image, Input, Button} from 'semantic-ui-react'
+import Responsive from "semantic-ui-react/dist/commonjs/addons/Responsive";
 
 
 class CropGallery extends React.Component {
@@ -47,8 +48,9 @@ class CropGallery extends React.Component {
     render() {
         return (
 
-            <Card onClick={e => this.props.indexChangeCallback(this.state.index)} color={this.setColor()}
-                  style={{minWidth: 300}}>
+            <Responsive as={Card} onClick={e => this.props.indexChangeCallback(this.state.index)}
+                         color={this.setColor()}
+                         style={{minWidth: 300}}>
                 <Card.Content>
                     <Card.Meta><span>Index: {this.state.index}</span></Card.Meta>
 
@@ -80,7 +82,7 @@ class CropGallery extends React.Component {
                 {/*<Button basic color='red' onClick={e => this.props.deleteCallback(this)}>*/}
                 {/*    Delete*/}
                 {/*</Button>*/}
-            </Card>
+            </Responsive>
         )
     }
 
