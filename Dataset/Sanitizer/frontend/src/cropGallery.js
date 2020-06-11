@@ -23,12 +23,14 @@ class CropGallery extends React.Component {
         }
     }
 
-    convertFreedomUnits(override = false) {
-        if (this.state.data || override) {
+    convertFreedomUnits() {
+        if (this.state.data) {
             let {weight} = this.state.data;
-            let tp = this.state.toPound || override;
+            let copy = this.state.data;
+            let tp = this.state.toPound;
             let constant = tp ? 0.453592 : 2.20462;
-            this.setState({data: {weight: (weight * constant).toFixed(3)}, toPound: !tp})
+            copy["weight"] = (weight * constant).toFixed(3);
+            this.setState({data: copy, toPound: !tp})
         }
     }
 
@@ -49,24 +51,24 @@ class CropGallery extends React.Component {
         return (
 
             <Responsive as={Card} onClick={e => this.props.indexChangeCallback(this.state.index)}
-                         color={this.setColor()}
-                         style={{minWidth: 300}}>
+                        color={this.setColor()}
+                        style={{minWidth: 300}}>
                 <Card.Content>
                     <Card.Meta><span>Index: {this.state.index}</span></Card.Meta>
 
                     <Grid rows={2}>
-                        <Grid.Row>
+                        <Responsive as={Grid.Column}>
                             {Object.keys(this.state.data).filter(k => k !== "id").map((key, idx) =>
-                                <Grid.Column key={"cropGaller_Input_" + idx}>
+                                <Grid.Row key={"cropGaller_Input_" + idx}>
                                     <Input label={key}
                                            type={"number"}
                                            onChange={this.onChange}
                                            labelPosition='left'
                                            value={this.state.data[key]}
                                     />
-                                </Grid.Column>
+                                </Grid.Row>
                             )}
-                        </Grid.Row>
+                        </Responsive>
 
                         <Grid.Row>
                             <Grid.Column>
@@ -78,10 +80,14 @@ class CropGallery extends React.Component {
                     </Grid>
 
                 </Card.Content>
-                {/*TODO Work on this */}
-                {/*<Button basic color='red' onClick={e => this.props.deleteCallback(this)}>*/}
-                {/*    Delete*/}
-                {/*</Button>*/}
+                {/*TODO Work on this */
+                }
+                {/*<Button basic color='red' onClick={e => this.props.deleteCallback(this)}>*/
+                }
+                {/*    Delete*/
+                }
+                {/*</Button>*/
+                }
             </Responsive>
         )
     }

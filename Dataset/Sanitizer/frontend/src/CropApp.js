@@ -98,10 +98,7 @@ class App extends React.Component {
     handleNameChange(event) {
         const {cookies} = this.props;
         const name = event.target.value;
-        console.log(cookies.get("name"))
-        console.log(name)
         cookies.set('name', name, {path: '/'});
-        console.log(name)
         this.setState({"name": name});
     }
 
@@ -113,7 +110,7 @@ class App extends React.Component {
         };
         let empty = Object.keys(data).length === 0;
         try {
-            fetch(`${BASE_URL}/img/${this.state.imgMeta["reddit_id"]}`, requestOptions)
+            fetch(`${BASE_URL}/img/${this.state.imgMeta["reddit_id"]}?name=${this.state.name}`, requestOptions)
                 .then(response => {
                     if (response.status === 201 || response.status === 200) {
                         if (showToast)
@@ -185,7 +182,8 @@ class App extends React.Component {
     async processRequest(data) {
         // console.table(data)
 
-        let temp = [{weight: data["start_weight"]}, {weight: data["end_weight"]}]
+        let {age} = data;
+        let temp = [{weight: data["start_weight"], age: age}, {weight: data["end_weight"], age: age}]
         let {reddit_id} = data
 
         let img_url = `${BASE_URL}/img/${reddit_id}`
@@ -227,7 +225,7 @@ class App extends React.Component {
                     if (res.status === 400) {
                         return Promise.reject()
                     }
-                    if (res.status === 404) {
+                    if (res.status === 404 || res.status === 500) {
                         return Promise.reject(new Error("bad_image"))
                     }
                     return res.json();
@@ -428,7 +426,8 @@ class App extends React.Component {
                                             <Message
                                                 icon='inbox'
                                                 header='Guidelines'
-                                                list={["Face must be present", " no photo > shitty photo", "no freedom units", "Try to maintain single person per image", "Adjust age"]}
+                                                list={["Face must be present", "Skip shitty pictures", "No freedom units",
+                                                    "Try to maintain single person per image", "Adjust age"]}
                                             />
                                         </Dropdown.Menu>
                                     </Dropdown>
