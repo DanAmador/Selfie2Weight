@@ -20,8 +20,8 @@ class MongoWrapper(AbstractDBWrapper):
         except Exception  as e:
             print(e)
             raise e
-        finally:
-            disconnect()
+        #finally:
+            #disconnect()
 
     @staticmethod
     def get_by(model: Document, query, **kwargs):
