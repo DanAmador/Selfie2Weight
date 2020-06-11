@@ -28,7 +28,7 @@ class RawEntry(Document):
 
 
 class SanitizedEntry(Document):
-    reddit_id = StringField(unique=True)
+    reddit_id = StringField()
     weight = DecimalField(min_value=0)
     height = DecimalField(min_value=0)
     width = DecimalField(min_value=0)

@@ -85,7 +85,7 @@ def get_by_id(image_id):
 
 @app.route("/img/<image_id>", methods=["POST"])
 def save(image_id):
-    try:
+   # try:
         body = request.data
         with db.session_scope():
             if body:
@@ -97,9 +97,8 @@ def save(image_id):
                         sanitized = SanitizedEntry(x=meta["x"], y=meta["y"], weight=entry["data"]["weight"],
                                                    age=entry["data"]["age"], width=meta["width"], height=meta["height"],
                                                    reddit_id=image_id)
-                        db.save_object(sanitized)
+                        sanitized.save()
                         r = RawEntry.objects(reddit_id=image_id).first()
-                        r.raw_meta = body
                         r.sanitized_entries.append(sanitized)
                         r.has_been_sanitized = True
                         r.sanitized_by = user
@@ -109,8 +108,8 @@ def save(image_id):
                 mark_as_empty(image_id)
                 return Response({}, status=200)
 
-    except Exception as e:
-        print(e)
+    #except Exception as e:
+    #    print(e)
 
 
 if __name__ == '__main__':
