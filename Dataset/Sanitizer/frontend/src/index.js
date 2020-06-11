@@ -25,7 +25,9 @@ import 'react-toastify/dist/ReactToastify.css';
 import {GlobalHotKeys} from "react-hotkeys";
 import Responsive from "semantic-ui-react/dist/commonjs/addons/Responsive";
 
-const BASE_URL = `http://${window.location.hostname}:5000`;
+// const BASE_URL = `http://${window.location.hostname}:5000`;
+const BASE_URL = "http://192.168.0.115:5000";
+
 
 class App extends React.Component {
     componentDidMount() {
@@ -351,10 +353,11 @@ class App extends React.Component {
                             <Header> {this.getCurrentInfo()}</Header>
 
                             <Cropper
-                                style={{minHeight: 300, maxHeight: 1000,height: '100%', width: '100%'}}
+                                style={{minHeight: 500, maxHeight: 700, minWidth: 300, maxWidth: 700}}
                                 guides={true}
                                 src={this.state.imageSrc}
                                 viewMode={2}
+                                responsive={true}
                                 ref={'cropper'}
                                 cropend={this.cropImage}
                             />
@@ -411,18 +414,16 @@ class App extends React.Component {
 
                         </Grid.Row>
                     </Grid.Column>
-                    <Grid.Column width={4}>
-                        <Card.Group>
-                            {this.state.data.map((data, idx) =>
+                    <Grid.Column width={8} rows={3}>
+
+                        {this.state.data.map((data, idx) =>
                                 <CropGallery indexChangeCallback={this.onIndexChange}
                                              deleteCallback={this.onGalleryDelete}
                                              key={idx + "_imgViewer"}
                                              ref={this.setGalleryRefs}
                                              index={idx}
                                              info={data}/>
-                            )}
-                        </Card.Group>
-
+                        )}
                     </Grid.Column>
 
                 </Grid>

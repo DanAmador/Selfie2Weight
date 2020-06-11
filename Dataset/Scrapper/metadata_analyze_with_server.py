@@ -16,23 +16,27 @@ host = "http://192.168.0.115:5000"
 
 
 def analyze_single_image(img_path) -> Dict[str, bool]:
-    face_meta = {}
-    url = f"{host}{img_path}"
-    image = imutils.url_to_image(url)
-    for name, cascade in cascades_classifiers.items():
-        faces = cascade.detectMultiScale(
-            image,
-            scaleFactor=1.1,
-            minNeighbors=5,
-            minSize=(30, 30)
-        )
-        if len(faces) > 0:
-            m = []
-            for (x, y, w, h) in faces:
-                m.append({"x": int(x), "y": int(y), "width": int(w), "height": int(h)})
-            face_meta[name] = m
-    del image
-    return face_meta
+    try:
+        face_meta = {}
+        url = f"{host}{img_path}"
+        image = imutils.url_to_image(url)
+        for name, cascade in cascades_classifiers.items():
+            faces = cascade.detectMultiScale(
+                image,
+                scaleFactor=1.1,
+                minNeighbors=5,
+                minSize=(30, 30)
+            )
+            if len(faces) > 0:
+                m = []
+                for (x, y, w, h) in faces:
+                    m.append({"x": int(x), "y": int(y), "width": int(w), "height": int(h)})
+                face_meta[name] = m
+        del image
+    except Exception as e:
+        logger.error(f"Crashed with {img_path}: {e}")
+    finally:
+        return face_meta
 
 
 def not_preprocessed_generator():
