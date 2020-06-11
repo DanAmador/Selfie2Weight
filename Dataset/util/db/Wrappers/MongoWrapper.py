@@ -1,11 +1,9 @@
 from contextlib import contextmanager
-from random import choice
+
+from mongoengine import *
 
 from util.dataset_logger import dataset_logger
 from util.db.Wrappers.AbstractDBWrapper import AbstractDBWrapper
-from mongoengine import *
-
-from util.db.model import SanitizedEntry, RawEntry
 
 
 class MongoWrapper(AbstractDBWrapper):
@@ -15,14 +13,13 @@ class MongoWrapper(AbstractDBWrapper):
     def session_scope(**kwargs):
         try:
             # AYY LMAO SECURITY
-            s = connect("selfies", username="root", password="rootpassword",
-                        authentication_source='admin', alias="default")
+            s = connect("selfies")
             yield s
         except Exception  as e:
             print(e)
             raise e
-        finally:
-            disconnect(alias="default")
+        #finally:
+            #disconnect()
 
     @staticmethod
     def get_by(model: Document, query, **kwargs):

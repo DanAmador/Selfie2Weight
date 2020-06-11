@@ -1,5 +1,5 @@
-import json
 import os
+from pathlib import Path
 
 from flask import request, send_file, Response, url_for, redirect
 from flask_api import FlaskAPI, status
@@ -17,8 +17,9 @@ CORS(app)
 @app.route('/img/<image_id>', methods=["GET"])
 def get_image_info(image_id):
     with db.session_scope():
-        res: RawEntry = db.get_by(RawEntry, {"reddit_id": image_id}, )
-        return send_file(res["local_path"], mimetype='image/gif')
+        res: RawEntry = RawEntry.objects(reddit_id=image_id).first()
+        logger.info(f"Sending: {res.local_path}")
+        return send_file(res.local_path, mimetype='image/jpg')
 
 
 @app.route('/', methods=["GET"])
@@ -32,10 +33,10 @@ def next_by(key):
     with db.session_scope():
 
         res: RawEntry = db.get_by(RawEntry, {key: False, "has_image": True})
-        if res:
+        if res and Path(res["local_path"]).is_file():
             res.pop("_id")
-            if "img_url" in res and "reddit_id" in res:
-               res["img_url"] = url_for("get_image_info", image_id=res["reddit_id"])
+            #if "img_url" in res and "reddit_id" in res:
+             #   res["img_url"] = url_for("get_image_info", image_id=res["reddit_id"])
             return res, status.HTTP_200_OK
         else:
             if key == "was_preprocessed":
@@ -49,6 +50,7 @@ def next_by(key):
 def save_meta(image_id):
     body = request.data
     if body:
+
         with db.session_scope():
             d = {}
             for k, v in body.items():
@@ -88,21 +90,26 @@ def save(image_id):
         body = request.data
         with db.session_scope():
             if body:
+                user = request.args.get('name')
+
                 for entry in body:
                     meta = entry.get("meta", None)
                     if meta:
                         sanitized = SanitizedEntry(x=meta["x"], y=meta["y"], weight=entry["data"]["weight"],
-                                                   width=meta["width"], height=meta["height"], reddit_id=image_id)
-                        db.save_object(sanitized)
-                        RawEntry.objects(reddit_id=image_id).update(set__raw_meta=body,
-                                                                    set__has_been_sanitized=True)
+                                                   age=entry["data"]["age"], width=meta["width"], height=meta["height"],
+                                                   reddit_id=image_id)
+                        sanitized.save()
+                        r = RawEntry.objects(reddit_id=image_id).first()
+                        r.sanitized_entries.append(sanitized)
+                        r.has_been_sanitized = True
+                        r.sanitized_by = user
+                        r.save()
                 return Response({}, status=201)
             else:
                 mark_as_empty(image_id)
                 return Response({}, status=200)
-
     except Exception as e:
-        print(e)
+        logger.error(e)
 
 
 if __name__ == '__main__':

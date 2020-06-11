@@ -24,13 +24,14 @@ class RawEntry(Document):
     has_been_sanitized = BooleanField(required=True, default=False)
     was_preprocessed = BooleanField(required=True, default=False)
     has_image = BooleanField(required=True, default=False)
+    sanitized_by = StringField()
 
 
 class SanitizedEntry(Document):
-    reddit_id = StringField(unique=True)
+    reddit_id = StringField()
     weight = DecimalField(min_value=0)
-    local_path = StringField(required=True)
     height = DecimalField(min_value=0)
     width = DecimalField(min_value=0)
     x = DecimalField(min_value=0)
     y = DecimalField(min_value=0)
+    age = IntField(required=True)

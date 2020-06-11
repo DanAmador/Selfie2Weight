@@ -3,7 +3,7 @@ import sys
 from datetime import datetime
 from multiprocessing.pool import ThreadPool
 from pathlib import Path
-
+import os
 from util.dataset_logger import dataset_logger as logger
 from util.db.Wrappers import MongoWrapper as db
 from util.db.model import RawEntry
@@ -35,7 +35,7 @@ def download_raw_images(download_all=False):
                 current = idx
             try:
                 success, path = save_image(entry)
-                if success:
+                if success and Path(path).is_file():
                     entry.local_path = str(path)
                     entry.has_image = True
                     db_wrapper.save_object(entry)
@@ -71,10 +71,40 @@ def extract_features_from_api(limit=sys.maxsize):
                 stats[subreddit.name]['error'] = stats[subreddit.name]['error'] + 1
 
 
+def double_check_files():
+    logger.info("Double checking files")
+    correct = 0
+    no_file = 0
+    total = 0
+    with db_wrapper.session_scope():
+        for total, raw in enumerate(RawEntry.objects):
+            if total % 100 == 1:
+                logger.info(f"{no_file} from {total} so far have no file  {(no_file / total) * 100}'")
+            try:
+                if raw.local_path and not Path(raw.local_path).is_file():
+                    p = raw.local_path
+                    success, path = save_image(raw)
+                    if not success or not Path(path).is_file():
+                        raw.delete()
+                        os.remove(p)
+                else:
+                    no_file += 1
+
+                    raw.delete()
+            except Exception as e:
+                no_file += 1
+                logger.error(f"Error at deleting {raw.reddit_id}: {e}")
+            finally:
+                correct += 1
+        logger.info(f"{correct} from {total} correct {(correct / total) * 100}'")
+        logger.info(f"{no_file} from {total} has no file  {(correct / total) * 100}'")
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("--meta", help="Download metadata from subreddits", type=bool, default=True)
-    parser.add_argument("--images", help="Download images", type=bool, default=True)
+    parser.add_argument("--meta", help="Download metadata from subreddits", type=bool, default=False)
+    parser.add_argument("--images", help="Download images", type=bool, default=False)
+    parser.add_argument("--double_check", help="Double check", type=bool, default=False)
     args = parser.parse_args()
 
     start_time = datetime.now()
@@ -87,6 +117,17 @@ if __name__ == '__main__':
         subreddits = [ProgressPics(), Brogress()]
         extract_features_from_api()
     if args.images:
+        logger.info("Resetting image download")
+        with db_wrapper.session_scope():
+            for r in  RawEntry.objects(has_image=True):
+                try:
+                    os.remove(r.local_path)
+                except Exception:
+                    logger.error(f"{r.reddit_id} didn't have an image")
+                finally:
+                    r.local_path = ""
+                    r.has_image = False
+                    r.save()
         logger.info("Downloading raw images from metadata")
         download_raw_images()
 
@@ -95,8 +136,13 @@ if __name__ == '__main__':
     duplicates = check_duplicates()
     logger.info(f'Found {len(duplicates)} duplicates')
     e = sum([delete_file(d) for d in duplicates])
+
     logger.info(f"Deleted {len(duplicates) - e} entries in duplicates")
     logger.error(f"Unsuccesfully deleted {e} entries in duplicates")
     logger.info(stats)
+
+    if args.double_check:
+        double_check_files()
+
     end_time = datetime.now() - start_time
     logger.info(f"Took {end_time} to complete")

@@ -1,6 +1,7 @@
 import React from 'react';
 
 import {Card, Grid, Image, Input, Button} from 'semantic-ui-react'
+import Responsive from "semantic-ui-react/dist/commonjs/addons/Responsive";
 
 
 class CropGallery extends React.Component {
@@ -22,18 +23,18 @@ class CropGallery extends React.Component {
         }
     }
 
-    convertFreedomUnits() {
-        if (this.state.data) {
-            let {weight} = this.state.data
-            let tp = this.state.toPound;
+    convertFreedomUnits(override = false) {
+        if (this.state.data || override) {
+            let {weight} = this.state.data;
+            let tp = this.state.toPound || override;
             let constant = tp ? 0.453592 : 2.20462;
             this.setState({data: {weight: (weight * constant).toFixed(3)}, toPound: !tp})
         }
     }
 
     onChange(e, d) {
-        let copy = this.state.data
-        copy[d["label"]] = d["value"]
+        let copy = this.state.data;
+        copy[d["label"]] = d["value"];
         this.setState({
             data: copy
         })
@@ -47,8 +48,9 @@ class CropGallery extends React.Component {
     render() {
         return (
 
-            <Card onClick={e => this.props.indexChangeCallback(this.state.index)} color={this.setColor()}
-                  style={{minWidth: 300}}>
+            <Responsive as={Card} onClick={e => this.props.indexChangeCallback(this.state.index)}
+                         color={this.setColor()}
+                         style={{minWidth: 300}}>
                 <Card.Content>
                     <Card.Meta><span>Index: {this.state.index}</span></Card.Meta>
 
@@ -68,8 +70,8 @@ class CropGallery extends React.Component {
 
                         <Grid.Row>
                             <Grid.Column>
-                                <Button onClick={this.convertFreedomUnits}>To KG</Button>
-
+                                <Button
+                                    onClick={this.convertFreedomUnits}>{this.state.toPound ? "To Lbs" : "To KG"}</Button>
                                 <Image src={this.state.imgUrl} fluid rounded style={{maxHeight: 200}}/>
                             </Grid.Column>
                         </Grid.Row>
@@ -80,7 +82,7 @@ class CropGallery extends React.Component {
                 {/*<Button basic color='red' onClick={e => this.props.deleteCallback(this)}>*/}
                 {/*    Delete*/}
                 {/*</Button>*/}
-            </Card>
+            </Responsive>
         )
     }
 
