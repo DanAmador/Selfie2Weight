@@ -15,13 +15,13 @@ class MongoWrapper(AbstractDBWrapper):
     def session_scope(**kwargs):
         try:
             # AYY LMAO SECURITY
-            s = connect("selfies", alias="default")
+            s = connect("selfies")
             yield s
         except Exception  as e:
             print(e)
             raise e
         finally:
-            disconnect(alias="default")
+            disconnect()
 
     @staticmethod
     def get_by(model: Document, query, **kwargs):

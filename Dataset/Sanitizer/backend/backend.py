@@ -18,6 +18,7 @@ CORS(app)
 def get_image_info(image_id):
     with db.session_scope():
         res: RawEntry = RawEntry.objects(reddit_id=image_id).first()
+        logger.info(f"Sending: {res.local_path}")
         return send_file(res.local_path, mimetype='image/jpg')
 
 
@@ -34,8 +35,8 @@ def next_by(key):
         res: RawEntry = db.get_by(RawEntry, {key: False, "has_image": True})
         if res and Path(res["local_path"]).is_file():
             res.pop("_id")
-            if "img_url" in res and "reddit_id" in res:
-                res["img_url"] = url_for("get_image_info", image_id=res["reddit_id"])
+            #if "img_url" in res and "reddit_id" in res:
+             #   res["img_url"] = url_for("get_image_info", image_id=res["reddit_id"])
             return res, status.HTTP_200_OK
         else:
             if key == "was_preprocessed":
@@ -85,7 +86,7 @@ def get_by_id(image_id):
 
 @app.route("/img/<image_id>", methods=["POST"])
 def save(image_id):
-   # try:
+    try:
         body = request.data
         with db.session_scope():
             if body:
@@ -107,9 +108,8 @@ def save(image_id):
             else:
                 mark_as_empty(image_id)
                 return Response({}, status=200)
-
-    #except Exception as e:
-    #    print(e)
+    except Exception as e:
+        logger.error(e)
 
 
 if __name__ == '__main__':
