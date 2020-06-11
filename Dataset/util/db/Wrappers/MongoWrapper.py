@@ -1,11 +1,9 @@
 from contextlib import contextmanager
-from random import choice
+
+from mongoengine import *
 
 from util.dataset_logger import dataset_logger
 from util.db.Wrappers.AbstractDBWrapper import AbstractDBWrapper
-from mongoengine import *
-
-from util.db.model import SanitizedEntry, RawEntry
 
 
 class MongoWrapper(AbstractDBWrapper):
