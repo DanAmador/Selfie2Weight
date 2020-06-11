@@ -49,6 +49,7 @@ def next_by(key):
 def save_meta(image_id):
     body = request.data
     if body:
+
         with db.session_scope():
             d = {}
             for k, v in body.items():
@@ -88,15 +89,20 @@ def save(image_id):
         body = request.data
         with db.session_scope():
             if body:
+                user = request.args.get('name')
+
                 for entry in body:
                     meta = entry.get("meta", None)
                     if meta:
                         sanitized = SanitizedEntry(x=meta["x"], y=meta["y"], weight=entry["data"]["weight"],
-                                                   width=meta["width"], height=meta["height"], reddit_id=image_id)
+                                                   age=entry["data"]["age"], width=meta["width"], height=meta["height"],
+                                                   reddit_id=image_id)
                         db.save_object(sanitized)
                         r = RawEntry.objects(reddit_id=image_id).first()
                         r.raw_meta = body
+                        r.sanitized_entries.append(sanitized)
                         r.has_been_sanitized = True
+                        r.sanitized_by = user
                         r.save()
                 return Response({}, status=201)
             else:

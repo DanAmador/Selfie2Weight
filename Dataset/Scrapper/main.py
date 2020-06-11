@@ -117,6 +117,17 @@ if __name__ == '__main__':
         subreddits = [ProgressPics(), Brogress()]
         extract_features_from_api()
     if args.images:
+        logger.info("Resetting image download")
+        with db_wrapper.session_scope():
+            for r in  RawEntry.objects(has_image=True):
+                try:
+                    os.remove(r.local_path)
+                except Exception:
+                    logger.error(f"{r.reddit_id} didn't have an image")
+                finally:
+                    r.local_path = ""
+                    r.has_image = False
+                    r.save()
         logger.info("Downloading raw images from metadata")
         download_raw_images()
 
