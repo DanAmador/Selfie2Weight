@@ -7,6 +7,12 @@ services:
       - 127.0.0.1:27017:27017
     volumes:
       - mongodb_data_container:/data/db
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
   scrapper:
     network_mode: "host"
     build:
@@ -16,6 +22,7 @@ services:
       - img_dump:/Dataset/Scrapper/dump
     depends_on:
       - mongodb
+
   backend:
     network_mode: "host"
     build:
@@ -25,6 +32,12 @@ services:
       - img_dump:/Dataset/Scrapper/dump
     depends_on:
       - mongodb
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
   frontend:
     stdin_open: true
     network_mode: "host"
@@ -33,6 +46,12 @@ services:
       context: .
     depends_on:
       - backend
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
 volumes:
   mongodb_data_container:
   img_dump:
