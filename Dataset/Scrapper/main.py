@@ -1,9 +1,13 @@
 import argparse
+import json
 import sys
 from datetime import datetime
 from multiprocessing.pool import ThreadPool
 from pathlib import Path
 import os
+
+from mongoengine import NotUniqueError
+
 from util.dataset_logger import dataset_logger as logger
 from util.db.Wrappers import MongoWrapper as db
 from util.db.model import RawEntry
@@ -111,15 +115,31 @@ if __name__ == '__main__':
 
     logger.info("Starting")
     if args.meta:
-        from Scrapper.Subreddits import Brogress, ProgressPics
+        d = Path(__file__).parent / "dump/db.json"
+        if d.is_file():
+            not_unique = 0
+            with open(d) as j:
+                jayson = json.load(j)
+                with db_wrapper.session_scope():
+                    for idx, raw_entry in enumerate(jayson):
+                        if idx % 500 == 1:
+                            logger.info(f"Saved {idx} raw entries from json dump with {not_unique} not unique")
+                        r = RawEntry.from_json(json.dumps(raw_entry))
+                        r.has_image = False
+                        r.local_path = ""
+                        succ = db_wrapper.save_object(r)
+                        if not succ:  # :(
+                            not_unique += 1
+        else:
+            from Scrapper.Subreddits import Brogress, ProgressPics
 
-        logger.info("Running metadata download")
-        subreddits = [ProgressPics(), Brogress()]
-        extract_features_from_api()
+            logger.info("Running metadata download")
+            subreddits = [ProgressPics(), Brogress()]
+            extract_features_from_api()
     if args.images:
         logger.info("Resetting image download")
         with db_wrapper.session_scope():
-            for r in  RawEntry.objects(has_image=True):
+            for r in RawEntry.objects(has_image=True):
                 try:
                     os.remove(r.local_path)
                 except Exception:
