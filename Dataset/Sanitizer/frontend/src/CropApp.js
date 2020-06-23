@@ -24,8 +24,8 @@ import Responsive from "semantic-ui-react/dist/commonjs/addons/Responsive";
 import {instanceOf} from 'prop-types';
 import {withCookies, Cookies} from 'react-cookie';
 import Form from "semantic-ui-react/dist/commonjs/collections/Form";
-// const BASE_URL = `http://${window.location.hostname}:5000`;
-const BASE_URL = "http://192.168.0.115:5000";
+const BASE_URL = `http://${window.location.hostname}:5000`;
+//const BASE_URL = "http://192.168.0.115:5000";
 
 
 class App extends React.Component {
@@ -109,8 +109,8 @@ class App extends React.Component {
             body: JSON.stringify(data)
         };
         let empty = Object.keys(data).length === 0;
-        console.log(`${BASE_URL}/img/${this.state.imgMeta["reddit_id"]}?name=${this.state.name}`)
-        console.log(requestOptions)
+        //console.log(`${BASE_URL}/img/${this.state.imgMeta["reddit_id"]}?name=${this.state.name}`)
+        //console.log(requestOptions)
         try {
             fetch(`${BASE_URL}/img/${this.state.imgMeta["reddit_id"]}?name=${this.state.name}`, requestOptions)
                 .then(response => {
