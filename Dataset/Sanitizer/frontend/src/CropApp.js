@@ -109,6 +109,8 @@ class App extends React.Component {
             body: JSON.stringify(data)
         };
         let empty = Object.keys(data).length === 0;
+        console.log(`${BASE_URL}/img/${this.state.imgMeta["reddit_id"]}?name=${this.state.name}`)
+        console.log(requestOptions)
         try {
             fetch(`${BASE_URL}/img/${this.state.imgMeta["reddit_id"]}?name=${this.state.name}`, requestOptions)
                 .then(response => {
