@@ -1,9 +1,13 @@
 import argparse
+import json
 import sys
 from datetime import datetime
 from multiprocessing.pool import ThreadPool
 from pathlib import Path
 import os
+
+from mongoengine import NotUniqueError
+
 from util.dataset_logger import dataset_logger as logger
 from util.db.Wrappers import MongoWrapper as db
 from util.db.model import RawEntry
@@ -80,21 +84,22 @@ def double_check_files():
         for total, raw in enumerate(RawEntry.objects):
             if total % 100 == 1:
                 logger.info(f"{no_file} from {total} so far have no file  {(no_file / total) * 100}'")
-
-            if not Path(raw.local_path).is_file():
-                p = raw.local_path
-                try:
+            try:
+                if raw.local_path and not Path(raw.local_path).is_file():
+                    p = raw.local_path
                     success, path = save_image(raw)
                     if not success or not Path(path).is_file():
                         raw.delete()
                         os.remove(p)
-                except Exception as e:
-                    logger.error(f"Error at deleting {raw.reddit_id}")
-                finally:
-                    correct += 1
+                else:
+                    no_file += 1
 
-            else:
+                    raw.delete()
+            except Exception as e:
                 no_file += 1
+                logger.error(f"Error at deleting {raw.reddit_id}: {e}")
+            finally:
+                correct += 1
         logger.info(f"{correct} from {total} correct {(correct / total) * 100}'")
         logger.info(f"{no_file} from {total} has no file  {(correct / total) * 100}'")
 
@@ -110,12 +115,39 @@ if __name__ == '__main__':
 
     logger.info("Starting")
     if args.meta:
-        from Scrapper.Subreddits import Brogress, ProgressPics
+        d = Path(__file__).parent / "dump/db.json"
+        if d.is_file():
+            not_unique = 0
+            with open(d) as j:
+                jayson = json.load(j)
+                with db_wrapper.session_scope():
+                    for idx, raw_entry in enumerate(jayson):
+                        if idx % 500 == 1:
+                            logger.info(f"Saved {idx} raw entries from json dump with {not_unique} not unique")
+                        r = RawEntry.from_json(json.dumps(raw_entry))
+                        r.has_image = False
+                        r.local_path = ""
+                        succ = db_wrapper.save_object(r)
+                        if not succ:  # :(
+                            not_unique += 1
+        else:
+            from Scrapper.Subreddits import Brogress, ProgressPics
 
-        logger.info("Running metadata download")
-        subreddits = [ProgressPics(), Brogress()]
-        extract_features_from_api()
+            logger.info("Running metadata download")
+            subreddits = [ProgressPics(), Brogress()]
+            extract_features_from_api()
     if args.images:
+        logger.info("Resetting image download")
+        with db_wrapper.session_scope():
+            for r in RawEntry.objects(has_image=True):
+                try:
+                    os.remove(r.local_path)
+                except Exception:
+                    logger.error(f"{r.reddit_id} didn't have an image")
+                finally:
+                    r.local_path = ""
+                    r.has_image = False
+                    r.save()
         logger.info("Downloading raw images from metadata")
         download_raw_images()
 

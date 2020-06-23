@@ -8,4 +8,4 @@ WORKDIR /Dataset/Scrapper
 RUN pip install --no-cache-dir -r ./requirements.txt
 ENV PYTHONPATH "${PYTHONPATH}:/Dataset"
 
-CMD python ./main.py
+CMD python ./main.py --double_check True --meta True --images True 
