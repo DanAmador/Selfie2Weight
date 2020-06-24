@@ -6,7 +6,6 @@ from multiprocessing.pool import ThreadPool
 from pathlib import Path
 import os
 
-from mongoengine import NotUniqueError
 
 from util.dataset_logger import dataset_logger as logger
 from util.db.Wrappers import MongoWrapper as db
@@ -112,7 +111,6 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     start_time = datetime.now()
-
     logger.info("Starting")
     if args.meta:
         d = Path(__file__).parent / "dump/db.json"

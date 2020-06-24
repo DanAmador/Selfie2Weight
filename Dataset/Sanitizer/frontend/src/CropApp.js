@@ -64,7 +64,6 @@ class App extends React.Component {
     };
     handlers = {
         NEW_GALLERY: e => this.onAddGallery(),
-        REMOVE_FREEDOM: e => this.onLbsConvert(),
         DELETE: e => this.onSendEmpty(),
         SUBMIT: e => this.onSave(),
         CHANGE_INDEX: e => this.onNextGallery(),
@@ -279,11 +278,7 @@ class App extends React.Component {
     }
 
 
-    onLbsConvert() {
-        this.galleryRefs.forEach(r => {
-            r.convertFreedomUnits()
-        });
-    }
+
 
     onGalleryDelete(gallery) {
         let length = this.state.data.length;
@@ -417,11 +412,6 @@ class App extends React.Component {
                                     </Button>
 
 
-                                    <Button animated onClick={this.onLbsConvert}
-                                            style={{float: 'right'}}>
-                                        <ButtonContent visible> Convert Units</ButtonContent>
-                                        <ButtonContent hidden> {this.keyMap.REMOVE_FREEDOM}</ButtonContent>
-                                    </Button>
                                     <Dropdown text='Guidelines' icon='question circle outline' floating labeled button
                                               className='icon'>
                                         <Dropdown.Menu>
