@@ -83,7 +83,6 @@ class App extends React.Component {
         this.onGalleryDelete = this.onGalleryDelete.bind(this);
         this.showToast = this.showToast.bind(this);
         this.onSendEmpty = this.onSendEmpty.bind(this);
-        this.onLbsConvert = this.onLbsConvert.bind(this);
         this.handleNameChange = this.handleNameChange.bind(this);
 
         this.galleryRefs = []
