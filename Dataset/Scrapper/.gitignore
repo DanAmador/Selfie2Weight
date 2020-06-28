@@ -1,4 +1,5 @@
 praw.ini
 #dump
 .mypy_cache
-/dump/dump.sqlite
+/dump/img
+/dump/sanitized

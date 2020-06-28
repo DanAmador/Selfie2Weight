@@ -1,18 +1,18 @@
 import argparse
 import json
+import os
 import sys
 from datetime import datetime
-from multiprocessing.pool import ThreadPool
 from pathlib import Path
-import os
 
+from mongoengine import NotUniqueError
 
 from util.dataset_logger import dataset_logger as logger
 from util.db.Wrappers import MongoWrapper as db
-from util.db.model import RawEntry
+from util.db.model import RawEntry, SanitizedEntry
 from util.image_util import save_image, check_duplicates, delete_file
 
-p = Path.cwd() / 'dump'
+p = Path(__file__).parent / 'dump'
 db_wrapper = db.MongoWrapper()
 
 pimg = (p / 'img')
@@ -23,7 +23,7 @@ stats = {}
 
 
 # Go through table and delete images and delete entries without a valid image
-def download_raw_images(download_all=False):
+def download_raw_images():
     logger.info("Downloading Images")
     with db_wrapper.session_scope():
         query = RawEntry.objects(has_image=False)
@@ -105,35 +105,44 @@ def double_check_files():
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("--meta", help="Download metadata from subreddits", type=bool, default=False)
+    parser.add_argument("--meta", help="Save meta from json dumps", type=bool, default=True)
     parser.add_argument("--images", help="Download images", type=bool, default=False)
     parser.add_argument("--double_check", help="Double check", type=bool, default=False)
+    parser.add_argument("--api", help="Download from api", type=bool, default=False)
     args = parser.parse_args()
 
     start_time = datetime.now()
     logger.info("Starting")
     if args.meta:
-        d = Path(__file__).parent / "dump/db.json"
-        if d.is_file():
+        for d in Path(__file__).parent.rglob("dump/*.json"):
+            type_ = d.stem
             not_unique = 0
             with open(d) as j:
                 jayson = json.load(j)
+                logger.info(f"Saving {type_} objects from json to mongo ")
                 with db_wrapper.session_scope():
-                    for idx, raw_entry in enumerate(jayson):
+                    for idx, json_entry in enumerate(jayson):
                         if idx % 500 == 1:
-                            logger.info(f"Saved {idx} raw entries from json dump with {not_unique} not unique")
-                        r = RawEntry.from_json(json.dumps(raw_entry))
-                        r.has_image = False
-                        r.local_path = ""
-                        succ = db_wrapper.save_object(r)
-                        if not succ:  # :(
+                            logger.info(f"Saved {idx} {type_} entries from json dump with {not_unique} not unique")
+                        r = None
+                        try:
+                            if type_ == "raw":
+                                r = RawEntry.from_json(json.dumps(json_entry), created=True)
+                                r.has_image = False
+                                r.local_path = ""
+                            else:
+                                r = SanitizedEntry.from_json(json.dumps(json_entry), created=True)
+                            r.save()
+                        except NotUniqueError:  # :(
                             not_unique += 1
-        else:
-            from Scrapper.Subreddits import Brogress, ProgressPics
 
-            logger.info("Running metadata download")
-            subreddits = [ProgressPics(), Brogress()]
-            extract_features_from_api()
+    if args.api:
+        from Scrapper.Subreddits import Brogress, ProgressPics
+
+        logger.info("Running metadata download")
+        subreddits = [ProgressPics(), Brogress()]
+    extract_features_from_api()
+
     if args.images:
         logger.info("Resetting image download")
         with db_wrapper.session_scope():
