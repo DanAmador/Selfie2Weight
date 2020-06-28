@@ -3,3 +3,4 @@ praw.ini
 .mypy_cache
 /dump/img
 /dump/sanitized
+/dump/dataset
