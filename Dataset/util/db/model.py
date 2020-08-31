@@ -1,4 +1,19 @@
+from dataclasses import dataclass
 from mongoengine import *
+
+
+@dataclass
+class Bbox:
+    x1: float
+    y1: float
+    x2: float
+    y2: float
+
+    def contains(self, other: "Bbox"):
+        return self.x1 < other.x1 or self.y1 < other.y1 or self.x2 > other.x2 or self.y2 > other.x2
+
+    def to_tuple(self):
+        return self.x1, self.y1, self.x2, self.y2
 
 
 class FeatureMeta(EmbeddedDocument):
@@ -6,6 +21,10 @@ class FeatureMeta(EmbeddedDocument):
     y = IntField(required=True)
     width = IntField(required=True)
     height = IntField(required=True)
+
+    @property
+    def bounding_box(self):
+        return Bbox(self.x, self.y, self.x + self.width, self.y + self.height)
 
 
 class RawEntry(Document):
@@ -35,3 +54,7 @@ class SanitizedEntry(Document):
     x = DecimalField(min_value=0)
     y = DecimalField(min_value=0)
     age = IntField(required=True)
+
+    @property
+    def bounding_box(self):
+        return Bbox(self.x, self.y, self.x + self.width, self.y + self.height)

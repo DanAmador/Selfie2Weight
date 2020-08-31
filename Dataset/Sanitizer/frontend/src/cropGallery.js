@@ -12,25 +12,32 @@ class CropGallery extends React.Component {
     constructor(props) {
         super(props);
         this.onChange = this.onChange.bind(this)
-        this.convertFreedomUnits = this.convertFreedomUnits.bind(this)
+        this.toKG = this.toKG.bind(this)
+        this.toPound = this.toPound.bind(this)
         this.state = {
             imgUrl: null,
             data: this.props.info,
             selected: false,
             index: this.props.index,
             meta: null,
-            toPound: true
         }
     }
 
-    convertFreedomUnits() {
+    toKG() {
         if (this.state.data) {
             let {weight} = this.state.data;
             let copy = this.state.data;
-            let tp = this.state.toPound;
-            let constant = tp ? 0.453592 : 2.20462;
-            copy["weight"] = (weight * constant).toFixed(3);
-            this.setState({data: copy, toPound: !tp})
+            copy["weight"] = (weight * 0.453592).toFixed(3);
+            this.setState({data: copy})
+        }
+    }
+
+    toPound() {
+        if (this.state.data) {
+            let {weight} = this.state.data;
+            let copy = this.state.data;
+            copy["weight"] = (weight * 2.20462).toFixed(3);
+            this.setState({data: copy})
         }
     }
 
@@ -72,8 +79,9 @@ class CropGallery extends React.Component {
 
                         <Grid.Row>
                             <Grid.Column>
-                                <Button
-                                    onClick={this.convertFreedomUnits}>{this.state.toPound ? "To Lbs" : "To KG"}</Button>
+                                <Button onClick={this.toKG}>To KG</Button>
+                                <Button onClick={this.toPound}>To Lbs</Button>
+
                                 <Image src={this.state.imgUrl} fluid rounded style={{maxHeight: 200}}/>
                             </Grid.Column>
                         </Grid.Row>
