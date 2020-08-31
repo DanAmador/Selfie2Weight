@@ -1,3 +1,4 @@
+from json.decoder import JSONDecodeError
 from pathlib import Path
 from typing import Dict
 
@@ -12,13 +13,13 @@ p = Path.cwd() / 'dump'
 cascades_classifiers = {str(e).split(".xml")[0].split("haarcascade_")[1]: cv2.CascadeClassifier(str(e)) for e in
                         p.parent.parent.rglob("cascades/*.xml")}
 pimg = (p / 'img')
-host = "http://192.168.0.115:5000"
+host = "http://pinchesselfies.hopto.org:5000"
 
 
-def analyze_single_image(img_path) -> Dict[str, bool]:
+def analyze_single_image(img_id) -> Dict[str, bool]:
+    face_meta = {}
     try:
-        face_meta = {}
-        url = f"{host}{img_path}"
+        url = f"{host}/img/{img_id}"
         image = imutils.url_to_image(url)
         for name, cascade in cascades_classifiers.items():
             faces = cascade.detectMultiScale(
@@ -34,18 +35,26 @@ def analyze_single_image(img_path) -> Dict[str, bool]:
                 face_meta[name] = m
         del image
     except Exception as e:
-        logger.error(f"Crashed with {img_path}: {e}")
+        logger.error(f"Crashed with {img_id}: {e}")
     finally:
+        print(face_meta.keys())
         return face_meta
 
 
 def not_preprocessed_generator():
     next_str = f"{host}/next/was_preprocessed"
     res = requests.get(next_str)
-    while res.json():
-        current = res.json()
-        yield current
-        res = requests.get(next_str)
+    current = {}
+    while True:
+        try:
+            current = res.json()
+        except JSONDecodeError:
+            logger.error(f"JSON decode error with {res.raw}")
+            yield {}
+        finally:
+            res = requests.get(next_str)
+
+            yield current
 
 
 def analyze_cascades_from_api():
@@ -53,11 +62,11 @@ def analyze_cascades_from_api():
     no_face_counter = 0
     face_counter = 0
     img_gen = not_preprocessed_generator()
+    keys = ["img_url", "local_path", "reddit_id"]
     for index, doc in enumerate(img_gen):
-        fpath = doc.get("img_url", None)
-        reddit_id = doc.get("reddit_id", None)
-        if fpath and reddit_id and "local_path" in doc:
-            meta = analyze_single_image(fpath)
+        if all(k in doc for k in keys):
+            reddit_id = doc.get("reddit_id", None)
+            meta = analyze_single_image(reddit_id)
             try:
                 if index % 100 == 10:
                     logger.info(
